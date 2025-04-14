@@ -1,12 +1,12 @@
 // Firebase Configuration
 const firebaseConfig = {
-  // Replace these with your actual Firebase project values when you have them
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  // Replace these with values from your Firebase web app config
+  apiKey: "YOUR_API_KEY", // Get this from Firebase console
+  authDomain: "happy-mag-content.firebaseapp.com",
+  projectId: "happy-mag-content", // This is your confirmed project ID
+  storageBucket: "happy-mag-content.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // Get this from Firebase console
+  appId: "YOUR_APP_ID" // Get this from Firebase console
 };
 
 // Initialize Firebase

@@ -215,12 +215,16 @@ function renderArticles() {
         const author = article.author || 'Unknown author';
         
         let statusBadge = '';
+        let viewButtonText = 'View Details';
+        
         if (article.status === 'scraped') {
             statusBadge = '<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Scraped</span>';
         } else if (article.status === 'rewritten') {
             statusBadge = '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Rewritten</span>';
+            viewButtonText = 'View & Copy';
         } else if (article.status === 'drafted') {
             statusBadge = '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Drafted</span>';
+            viewButtonText = 'View & Copy';
         }
         
         html += `
@@ -234,7 +238,7 @@ function renderArticles() {
                     <div>${author}</div>
                 </div>
                 <button class="text-sm text-blue-600 hover:underline view-article-btn" data-id="${article.id}">
-                    View Details
+                    ${viewButtonText}
                 </button>
             </div>
         `;
@@ -262,9 +266,18 @@ function openArticleModal(articleId) {
     // Set original content
     originalContentEl.innerHTML = `<p>${article.body || 'No content available'}</p>`;
     
-    // Set rewritten content
+    // Set rewritten content with copy button
     if (article.rewritten_html) {
-        rewrittenContentEl.innerHTML = article.rewritten_html;
+        const copyButton = `<button id="copy-rewritten-btn" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 mb-3">Copy Article</button>`;
+        rewrittenContentEl.innerHTML = `${copyButton}<div id="rewritten-text">${article.rewritten_html}</div>`;
+        
+        // Add event listener to the copy button
+        setTimeout(() => {
+            const copyBtn = document.getElementById('copy-rewritten-btn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => copyArticleContent());
+            }
+        }, 0);
     } else {
         rewrittenContentEl.innerHTML = '<p>Not yet rewritten</p>';
     }
@@ -331,4 +344,69 @@ function setupEventListeners() {
 }
 
 // Initialize the dashboard when the page loads
-document.addEventListener('DOMContentLoaded', initDashboard); 
+document.addEventListener('DOMContentLoaded', initDashboard);
+
+// Function to copy the rewritten article content
+function copyArticleContent() {
+    const rewrittenText = document.getElementById('rewritten-text');
+    if (!rewrittenText) return;
+    
+    // Get the text content (strip HTML)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rewrittenText.innerHTML;
+    const textToCopy = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Try to use clipboard API first
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showCopyFeedback(true);
+        }).catch(err => {
+            console.error('Error copying text with Clipboard API: ', err);
+            // Fall back to execCommand
+            copyTextFallback(textToCopy);
+        });
+    } else {
+        // Use fallback for browsers without Clipboard API
+        copyTextFallback(textToCopy);
+    }
+}
+
+// Fallback copy method using execCommand
+function copyTextFallback(text) {
+    try {
+        const textArea = document.getElementById('hidden-textarea');
+        textArea.value = text;
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showCopyFeedback(true);
+        } else {
+            showCopyFeedback(false);
+        }
+    } catch (err) {
+        console.error('Fallback: Error copying text: ', err);
+        showCopyFeedback(false);
+        alert('Failed to copy text. Please manually select and copy the content.');
+    }
+}
+
+// Function to show copy feedback
+function showCopyFeedback(success = true) {
+    const copyBtn = document.getElementById('copy-rewritten-btn');
+    if (copyBtn) {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = success ? 'Copied!' : 'Failed to copy';
+        copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        copyBtn.classList.add(success ? 'bg-green-600' : 'bg-red-600', 
+                              success ? 'hover:bg-green-700' : 'hover:bg-red-700');
+        
+        setTimeout(() => {
+            copyBtn.textContent = originalText;
+            copyBtn.classList.remove(success ? 'bg-green-600' : 'bg-red-600', 
+                                   success ? 'hover:bg-green-700' : 'hover:bg-red-700');
+            copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }, 2000);
+    }
+} 

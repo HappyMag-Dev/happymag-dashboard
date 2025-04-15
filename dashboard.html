@@ -14,9 +14,43 @@
             transform: translateY(-2px);
             transition: transform 0.3s ease;
         }
+        /* Tooltip styles for copy button */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            padding: 5px 0;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* Hidden textarea for copy fallback */
+        #hidden-textarea {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+        }
     </style>
 </head>
 <body class="bg-white text-gray-900 min-h-screen">
+    <!-- Hidden textarea for copy fallback -->
+    <textarea id="hidden-textarea" aria-hidden="true"></textarea>
+
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <header class="mb-10">
@@ -145,6 +179,11 @@
     <script>
         // Firebase configuration will be injected by the server
         // Dashboard functionality will be implemented in app.js
+        
+        // Check if Clipboard API is supported
+        if (!navigator.clipboard) {
+            console.warn('Clipboard API not available. Using fallback.');
+        }
     </script>
     <script src="app.js"></script>
 </body>

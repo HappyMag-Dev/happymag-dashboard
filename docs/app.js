@@ -268,8 +268,20 @@ function openArticleModal(articleId) {
     
     // Set rewritten content with copy button
     if (article.rewritten_html) {
-        const copyButton = `<button id="copy-rewritten-btn" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 mb-3">Copy Article</button>`;
-        rewrittenContentEl.innerHTML = `${copyButton}<div id="rewritten-text">${article.rewritten_html}</div>`;
+        const copyButton = `
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-gray-700">Rewritten Version</h3>
+                <button id="copy-rewritten-btn" class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    <span>Copy Article</span>
+                </button>
+            </div>
+            <div id="rewritten-text" class="prose max-w-none">
+                ${article.rewritten_html}
+            </div>`;
+        rewrittenContentEl.innerHTML = copyButton;
         
         // Add event listener to the copy button
         setTimeout(() => {
@@ -396,17 +408,36 @@ function copyTextFallback(text) {
 function showCopyFeedback(success = true) {
     const copyBtn = document.getElementById('copy-rewritten-btn');
     if (copyBtn) {
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = success ? 'Copied!' : 'Failed to copy';
-        copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-        copyBtn.classList.add(success ? 'bg-green-600' : 'bg-red-600', 
-                              success ? 'hover:bg-green-700' : 'hover:bg-red-700');
+        // Save original HTML
+        const originalHTML = copyBtn.innerHTML;
         
+        // Update button appearance for feedback
+        if (success) {
+            copyBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Copied!</span>
+            `;
+            copyBtn.classList.remove('bg-gray-800', 'hover:bg-gray-700');
+            copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+        } else {
+            copyBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>Failed to copy</span>
+            `;
+            copyBtn.classList.remove('bg-gray-800', 'hover:bg-gray-700');
+            copyBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        }
+        
+        // Reset after delay
         setTimeout(() => {
-            copyBtn.textContent = originalText;
+            copyBtn.innerHTML = originalHTML;
             copyBtn.classList.remove(success ? 'bg-green-600' : 'bg-red-600', 
                                    success ? 'hover:bg-green-700' : 'hover:bg-red-700');
-            copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            copyBtn.classList.add('bg-gray-800', 'hover:bg-gray-700');
         }, 2000);
     }
 } 

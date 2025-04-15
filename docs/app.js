@@ -41,11 +41,20 @@ const closeModalEl = document.getElementById('close-modal');
 // Global state
 let currentFilter = 'all';
 let articles = [];
+let workflowActive = true;
+
+// Additional DOM elements for workflow control
+const workflowStatusIndicator = document.getElementById('workflow-status-indicator');
+const workflowStatusText = document.getElementById('workflow-status-text');
+const toggleWorkflowBtn = document.getElementById('toggle-workflow-btn');
 
 // Initialize the dashboard
 function initDashboard() {
     // Update timestamps
     updateLastUpdated();
+    
+    // Check workflow status
+    checkWorkflowStatus();
     
     // Load data
     loadStats();
@@ -54,6 +63,70 @@ function initDashboard() {
     
     // Set up event listeners
     setupEventListeners();
+}
+
+// Check workflow status from Firestore
+function checkWorkflowStatus() {
+    db.collection('system').doc('workflow')
+        .get()
+        .then((doc) => {
+            if (doc.exists) {
+                workflowActive = !doc.data().paused;
+                updateWorkflowUI();
+            } else {
+                // Create the document if it doesn't exist
+                db.collection('system').doc('workflow').set({
+                    paused: false,
+                    lastUpdated: new Date().toISOString()
+                });
+                workflowActive = true;
+                updateWorkflowUI();
+            }
+        })
+        .catch((error) => {
+            console.error("Error checking workflow status:", error);
+        });
+}
+
+// Update workflow UI based on current state
+function updateWorkflowUI() {
+    if (workflowActive) {
+        workflowStatusIndicator.classList.remove('bg-red-500');
+        workflowStatusIndicator.classList.add('bg-green-500');
+        workflowStatusText.textContent = 'Workflow Active';
+        toggleWorkflowBtn.textContent = 'Pause Workflow';
+        toggleWorkflowBtn.classList.remove('bg-green-600', 'text-white', 'hover:bg-green-700');
+        toggleWorkflowBtn.classList.add('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
+    } else {
+        workflowStatusIndicator.classList.remove('bg-green-500');
+        workflowStatusIndicator.classList.add('bg-red-500');
+        workflowStatusText.textContent = 'Workflow Paused';
+        toggleWorkflowBtn.textContent = 'Resume Workflow';
+        toggleWorkflowBtn.classList.remove('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
+        toggleWorkflowBtn.classList.add('bg-green-600', 'text-white', 'hover:bg-green-700');
+    }
+}
+
+// Toggle workflow state
+function toggleWorkflowState() {
+    // Update local state
+    workflowActive = !workflowActive;
+    
+    // Update Firestore
+    db.collection('system').doc('workflow').set({
+        paused: !workflowActive,
+        lastUpdated: new Date().toISOString()
+    })
+    .then(() => {
+        console.log(`Workflow ${workflowActive ? 'resumed' : 'paused'}`);
+        updateWorkflowUI();
+    })
+    .catch((error) => {
+        console.error("Error updating workflow state:", error);
+        // Revert local state on error
+        workflowActive = !workflowActive;
+        alert(`Failed to ${workflowActive ? 'pause' : 'resume'} workflow. Please try again.`);
+    });
 }
 
 // Update the last updated timestamp
@@ -327,6 +400,7 @@ function setupEventListeners() {
     // Refresh button
     refreshBtnEl.addEventListener('click', () => {
         updateLastUpdated();
+        checkWorkflowStatus();
         loadStats();
         loadActivity();
         loadArticles();
@@ -343,6 +417,9 @@ function setupEventListeners() {
         // This would trigger a GitHub Action workflow dispatch in a real implementation
         alert('This would trigger a manual run on the server. Not implemented in this demo.');
     });
+    
+    // Toggle workflow button
+    toggleWorkflowBtn.addEventListener('click', toggleWorkflowState);
     
     // Close modal button
     closeModalEl.addEventListener('click', closeArticleModal);

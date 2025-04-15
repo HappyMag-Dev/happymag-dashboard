@@ -56,7 +56,17 @@
         <header class="mb-10">
             <div class="flex justify-between items-center border-b border-gray-200 pb-4">
                 <h1 class="text-3xl font-bold">Happy Mag AI Content Dashboard</h1>
-                <div class="text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center mr-2">
+                        <div id="workflow-status-indicator" class="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+                        <span id="workflow-status-text" class="text-sm">Workflow Active</span>
+                    </div>
+                    <button id="toggle-workflow-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+                        Pause Workflow
+                    </button>
+                    <div class="text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
+                    <button id="logout-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Sign Out</button>
+                </div>
             </div>
         </header>
 

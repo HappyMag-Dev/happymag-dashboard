@@ -22,7 +22,10 @@
         <header class="mb-10">
             <div class="flex justify-between items-center border-b border-gray-200 pb-4">
                 <h1 class="text-3xl font-bold">Happy Mag AI Content Dashboard</h1>
-                <div class="text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
+                    <button id="logout-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Sign Out</button>
+                </div>
             </div>
         </header>
 
@@ -50,6 +53,26 @@
                         <span class="text-3xl font-bold" id="posted-count">0</span>
                         <span class="text-gray-500 ml-2 text-sm" id="posted-today">Today: 0</span>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Articles Section (Moved above Activity) -->
+        <section class="mb-10">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Recent Articles</h2>
+                <div class="flex space-x-2">
+                    <select id="filter-status" class="border border-gray-300 rounded p-2">
+                        <option value="all">All Articles</option>
+                        <option value="scraped">Scraped</option>
+                        <option value="rewritten">Rewritten</option>
+                        <option value="drafted">Drafted to WordPress</option>
+                    </select>
+                </div>
+            </div>
+            <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="flex items-center justify-center h-40 bg-gray-50 rounded p-4">
+                    <span class="text-gray-400">Loading articles...</span>
                 </div>
             </div>
         </section>
@@ -82,26 +105,6 @@
                         </tr>
                     </tbody>
                 </table>
-            </div>
-        </section>
-
-        <!-- Articles -->
-        <section>
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Recent Articles</h2>
-                <div class="flex space-x-2">
-                    <select id="filter-status" class="border border-gray-300 rounded p-2">
-                        <option value="all">All Articles</option>
-                        <option value="scraped">Scraped</option>
-                        <option value="rewritten">Rewritten</option>
-                        <option value="drafted">Drafted to WordPress</option>
-                    </select>
-                </div>
-            </div>
-            <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="flex items-center justify-center h-40 bg-gray-50 rounded p-4">
-                    <span class="text-gray-400">Loading articles...</span>
-                </div>
             </div>
         </section>
     </div>
@@ -142,10 +145,20 @@
         </div>
     </div>
 
+    <!-- Authentication Check -->
     <script>
-        // Firebase configuration will be injected by the server
-        // Dashboard functionality will be implemented in app.js
+        // Check authentication
+        if (!sessionStorage.getItem('authenticated')) {
+            window.location.href = 'index.html';
+        }
+
+        // Add logout functionality
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            sessionStorage.removeItem('authenticated');
+            window.location.href = 'index.html';
+        });
     </script>
+    
     <script src="app.js"></script>
 </body>
 </html> 

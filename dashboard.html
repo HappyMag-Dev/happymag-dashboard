@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Happy Mag AI Content Dashboard</title>
-    <script src="auth.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
@@ -14,49 +13,18 @@
             transform: translateY(-2px);
             transition: transform 0.3s ease;
         }
-        /* Tooltip styles for copy button */
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 120px;
-            background-color: #555;
-            color: #fff;
-            text-align: center;
-            padding: 5px 0;
-            border-radius: 6px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -60px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-        /* Hidden textarea for copy fallback */
-        #hidden-textarea {
-            position: absolute;
-            left: -9999px;
-            top: 0;
-        }
     </style>
 </head>
 <body class="bg-white text-gray-900 min-h-screen">
-    <!-- Hidden textarea for copy fallback -->
-    <textarea id="hidden-textarea" aria-hidden="true"></textarea>
-
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <header class="mb-10">
             <div class="flex justify-between items-center border-b border-gray-200 pb-4">
                 <h1 class="text-3xl font-bold">Happy Mag AI Content Dashboard</h1>
-                <div class="text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
+                    <button id="logout-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Sign Out</button>
+                </div>
             </div>
         </header>
 
@@ -88,7 +56,27 @@
             </div>
         </section>
 
-        <!-- Recent Activity -->
+        <!-- Recent Articles (Moved up) -->
+        <section class="mb-10">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Recent Articles</h2>
+                <div class="flex space-x-2">
+                    <select id="filter-status" class="border border-gray-300 rounded p-2">
+                        <option value="all">All Articles</option>
+                        <option value="scraped">Scraped</option>
+                        <option value="rewritten">Rewritten</option>
+                        <option value="drafted">Drafted to WordPress</option>
+                    </select>
+                </div>
+            </div>
+            <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="flex items-center justify-center h-40 bg-gray-50 rounded p-4">
+                    <span class="text-gray-400">Loading articles...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Activity (Now below Articles) -->
         <section class="mb-10">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-semibold">Recent Activity</h2>
@@ -116,26 +104,6 @@
                         </tr>
                     </tbody>
                 </table>
-            </div>
-        </section>
-
-        <!-- Articles -->
-        <section>
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Recent Articles</h2>
-                <div class="flex space-x-2">
-                    <select id="filter-status" class="border border-gray-300 rounded p-2">
-                        <option value="all">All Articles</option>
-                        <option value="scraped">Scraped</option>
-                        <option value="rewritten">Rewritten</option>
-                        <option value="drafted">Drafted to WordPress</option>
-                    </select>
-                </div>
-            </div>
-            <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="flex items-center justify-center h-40 bg-gray-50 rounded p-4">
-                    <span class="text-gray-400">Loading articles...</span>
-                </div>
             </div>
         </section>
     </div>
@@ -176,15 +144,20 @@
         </div>
     </div>
 
+    <!-- Authentication Check -->
     <script>
-        // Firebase configuration will be injected by the server
-        // Dashboard functionality will be implemented in app.js
-        
-        // Check if Clipboard API is supported
-        if (!navigator.clipboard) {
-            console.warn('Clipboard API not available. Using fallback.');
+        // Check authentication
+        if (!sessionStorage.getItem('authenticated')) {
+            window.location.href = 'index.html';
         }
+
+        // Add logout functionality
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            sessionStorage.removeItem('authenticated');
+            window.location.href = 'index.html';
+        });
     </script>
+    
     <script src="app.js"></script>
 </body>
 </html> 

@@ -299,6 +299,52 @@ function openArticleModal(articleId) {
     articleModalEl.classList.remove('hidden');
 }
 
+// Function to copy the rewritten article content
+function copyArticleContent() {
+    const rewrittenText = document.getElementById('rewritten-text');
+    if (!rewrittenText) return;
+    
+    // Get the text content (strip HTML)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rewrittenText.innerHTML;
+    const textToCopy = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Try to use clipboard API first
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showCopyFeedback(true);
+        }).catch(err => {
+            console.error('Error copying text with Clipboard API: ', err);
+            // Fall back to execCommand
+            copyTextFallback(textToCopy);
+        });
+    } else {
+        // Use fallback for browsers without Clipboard API
+        copyTextFallback(textToCopy);
+    }
+}
+
+// Fallback copy method using execCommand
+function copyTextFallback(text) {
+    try {
+        const textArea = document.getElementById('hidden-textarea');
+        textArea.value = text;
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showCopyFeedback(true);
+        } else {
+            showCopyFeedback(false);
+        }
+    } catch (err) {
+        console.error('Fallback: Error copying text: ', err);
+        showCopyFeedback(false);
+        alert('Failed to copy text. Please manually select and copy the content.');
+    }
+}
+
 // Get WordPress URL from post ID
 function getWordPressUrl(postId) {
     // This should be configured to match your WordPress site
@@ -346,53 +392,7 @@ function setupEventListeners() {
 // Initialize the dashboard when the page loads
 document.addEventListener('DOMContentLoaded', initDashboard);
 
-// Function to copy the rewritten article content
-function copyArticleContent() {
-    const rewrittenText = document.getElementById('rewritten-text');
-    if (!rewrittenText) return;
-    
-    // Get the text content (strip HTML)
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = rewrittenText.innerHTML;
-    const textToCopy = tempDiv.textContent || tempDiv.innerText || '';
-    
-    // Try to use clipboard API first
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            showCopyFeedback(true);
-        }).catch(err => {
-            console.error('Error copying text with Clipboard API: ', err);
-            // Fall back to execCommand
-            copyTextFallback(textToCopy);
-        });
-    } else {
-        // Use fallback for browsers without Clipboard API
-        copyTextFallback(textToCopy);
-    }
-}
-
-// Fallback copy method using execCommand
-function copyTextFallback(text) {
-    try {
-        const textArea = document.getElementById('hidden-textarea');
-        textArea.value = text;
-        textArea.focus();
-        textArea.select();
-        
-        const successful = document.execCommand('copy');
-        if (successful) {
-            showCopyFeedback(true);
-        } else {
-            showCopyFeedback(false);
-        }
-    } catch (err) {
-        console.error('Fallback: Error copying text: ', err);
-        showCopyFeedback(false);
-        alert('Failed to copy text. Please manually select and copy the content.');
-    }
-}
-
-// Function to show copy feedback
+// Extract showCopyFeedback as a standalone function for reuse
 function showCopyFeedback(success = true) {
     const copyBtn = document.getElementById('copy-rewritten-btn');
     if (copyBtn) {

@@ -41,20 +41,11 @@ const closeModalEl = document.getElementById('close-modal');
 // Global state
 let currentFilter = 'all';
 let articles = [];
-let workflowActive = true;
-
-// Additional DOM elements for workflow control
-const workflowStatusIndicator = document.getElementById('workflow-status-indicator');
-const workflowStatusText = document.getElementById('workflow-status-text');
-const toggleWorkflowBtn = document.getElementById('toggle-workflow-btn');
 
 // Initialize the dashboard
 function initDashboard() {
     // Update timestamps
     updateLastUpdated();
-    
-    // Check workflow status
-    checkWorkflowStatus();
     
     // Load data
     loadStats();
@@ -63,70 +54,6 @@ function initDashboard() {
     
     // Set up event listeners
     setupEventListeners();
-}
-
-// Check workflow status from Firestore
-function checkWorkflowStatus() {
-    db.collection('system').doc('workflow')
-        .get()
-        .then((doc) => {
-            if (doc.exists) {
-                workflowActive = !doc.data().paused;
-                updateWorkflowUI();
-            } else {
-                // Create the document if it doesn't exist
-                db.collection('system').doc('workflow').set({
-                    paused: false,
-                    lastUpdated: new Date().toISOString()
-                });
-                workflowActive = true;
-                updateWorkflowUI();
-            }
-        })
-        .catch((error) => {
-            console.error("Error checking workflow status:", error);
-        });
-}
-
-// Update workflow UI based on current state
-function updateWorkflowUI() {
-    if (workflowActive) {
-        workflowStatusIndicator.classList.remove('bg-red-500');
-        workflowStatusIndicator.classList.add('bg-green-500');
-        workflowStatusText.textContent = 'Workflow Active';
-        toggleWorkflowBtn.textContent = 'Pause Workflow';
-        toggleWorkflowBtn.classList.remove('bg-green-600', 'text-white', 'hover:bg-green-700');
-        toggleWorkflowBtn.classList.add('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
-    } else {
-        workflowStatusIndicator.classList.remove('bg-green-500');
-        workflowStatusIndicator.classList.add('bg-red-500');
-        workflowStatusText.textContent = 'Workflow Paused';
-        toggleWorkflowBtn.textContent = 'Resume Workflow';
-        toggleWorkflowBtn.classList.remove('bg-gray-200', 'text-gray-800', 'hover:bg-gray-300');
-        toggleWorkflowBtn.classList.add('bg-green-600', 'text-white', 'hover:bg-green-700');
-    }
-}
-
-// Toggle workflow state
-function toggleWorkflowState() {
-    // Update local state
-    workflowActive = !workflowActive;
-    
-    // Update Firestore
-    db.collection('system').doc('workflow').set({
-        paused: !workflowActive,
-        lastUpdated: new Date().toISOString()
-    })
-    .then(() => {
-        console.log(`Workflow ${workflowActive ? 'resumed' : 'paused'}`);
-        updateWorkflowUI();
-    })
-    .catch((error) => {
-        console.error("Error updating workflow state:", error);
-        // Revert local state on error
-        workflowActive = !workflowActive;
-        alert(`Failed to ${workflowActive ? 'pause' : 'resume'} workflow. Please try again.`);
-    });
 }
 
 // Update the last updated timestamp
@@ -341,20 +268,8 @@ function openArticleModal(articleId) {
     
     // Set rewritten content with copy button
     if (article.rewritten_html) {
-        const copyButton = `
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-semibold text-gray-700">Rewritten Version</h3>
-                <button id="copy-rewritten-btn" class="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    <span>Copy Article</span>
-                </button>
-            </div>
-            <div id="rewritten-text" class="prose max-w-none">
-                ${article.rewritten_html}
-            </div>`;
-        rewrittenContentEl.innerHTML = copyButton;
+        const copyButton = `<button id="copy-rewritten-btn" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 mb-3">Copy Article</button>`;
+        rewrittenContentEl.innerHTML = `${copyButton}<div id="rewritten-text">${article.rewritten_html}</div>`;
         
         // Add event listener to the copy button
         setTimeout(() => {
@@ -383,57 +298,6 @@ function openArticleModal(articleId) {
     // Show modal
     articleModalEl.classList.remove('hidden');
 }
-
-// Get WordPress URL from post ID
-function getWordPressUrl(postId) {
-    // This should be configured to match your WordPress site
-    return `https://happymag.tv/wp-admin/post.php?post=${postId}&action=edit`;
-}
-
-// Close article modal
-function closeArticleModal() {
-    articleModalEl.classList.add('hidden');
-}
-
-// Setup event listeners
-function setupEventListeners() {
-    // Refresh button
-    refreshBtnEl.addEventListener('click', () => {
-        updateLastUpdated();
-        checkWorkflowStatus();
-        loadStats();
-        loadActivity();
-        loadArticles();
-    });
-    
-    // Filter status
-    filterStatusEl.addEventListener('change', () => {
-        currentFilter = filterStatusEl.value;
-        renderArticles();
-    });
-    
-    // Run manually button
-    runManuallyBtnEl.addEventListener('click', () => {
-        // This would trigger a GitHub Action workflow dispatch in a real implementation
-        alert('This would trigger a manual run on the server. Not implemented in this demo.');
-    });
-    
-    // Toggle workflow button
-    toggleWorkflowBtn.addEventListener('click', toggleWorkflowState);
-    
-    // Close modal button
-    closeModalEl.addEventListener('click', closeArticleModal);
-    
-    // Close modal when clicking outside
-    articleModalEl.addEventListener('click', (e) => {
-        if (e.target === articleModalEl) {
-            closeArticleModal();
-        }
-    });
-}
-
-// Initialize the dashboard when the page loads
-document.addEventListener('DOMContentLoaded', initDashboard);
 
 // Function to copy the rewritten article content
 function copyArticleContent() {
@@ -481,40 +345,68 @@ function copyTextFallback(text) {
     }
 }
 
-// Function to show copy feedback
+// Get WordPress URL from post ID
+function getWordPressUrl(postId) {
+    // This should be configured to match your WordPress site
+    return `https://happymag.tv/wp-admin/post.php?post=${postId}&action=edit`;
+}
+
+// Close article modal
+function closeArticleModal() {
+    articleModalEl.classList.add('hidden');
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Refresh button
+    refreshBtnEl.addEventListener('click', () => {
+        updateLastUpdated();
+        loadStats();
+        loadActivity();
+        loadArticles();
+    });
+    
+    // Filter status
+    filterStatusEl.addEventListener('change', () => {
+        currentFilter = filterStatusEl.value;
+        renderArticles();
+    });
+    
+    // Run manually button
+    runManuallyBtnEl.addEventListener('click', () => {
+        // This would trigger a GitHub Action workflow dispatch in a real implementation
+        alert('This would trigger a manual run on the server. Not implemented in this demo.');
+    });
+    
+    // Close modal button
+    closeModalEl.addEventListener('click', closeArticleModal);
+    
+    // Close modal when clicking outside
+    articleModalEl.addEventListener('click', (e) => {
+        if (e.target === articleModalEl) {
+            closeArticleModal();
+        }
+    });
+}
+
+// Initialize the dashboard when the page loads
+document.addEventListener('DOMContentLoaded', initDashboard);
+
+// Extract showCopyFeedback as a standalone function for reuse
 function showCopyFeedback(success = true) {
     const copyBtn = document.getElementById('copy-rewritten-btn');
     if (copyBtn) {
-        // Save original HTML
-        const originalHTML = copyBtn.innerHTML;
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = success ? 'Copied!' : 'Failed to copy';
+        copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        copyBtn.classList.add(success ? 'bg-green-600' : 'bg-red-600', 
+                              success ? 'hover:bg-green-700' : 'hover:bg-red-700');
         
-        // Update button appearance for feedback
-        if (success) {
-            copyBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Copied!</span>
-            `;
-            copyBtn.classList.remove('bg-gray-800', 'hover:bg-gray-700');
-            copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-        } else {
-            copyBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span>Failed to copy</span>
-            `;
-            copyBtn.classList.remove('bg-gray-800', 'hover:bg-gray-700');
-            copyBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-        }
-        
-        // Reset after delay
         setTimeout(() => {
-            copyBtn.innerHTML = originalHTML;
+            copyBtn.textContent = originalText;
             copyBtn.classList.remove(success ? 'bg-green-600' : 'bg-red-600', 
                                    success ? 'hover:bg-green-700' : 'hover:bg-red-700');
-            copyBtn.classList.add('bg-gray-800', 'hover:bg-gray-700');
+            copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
         }, 2000);
     }
 } 

@@ -456,7 +456,7 @@ function triggerGitHubWorkflow() {
                 const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}`;
                 
                 // First retrieve the GitHub token from Firebase
-                const configDoc = await db.collection('system').doc('config').get();
+                const configDoc = await db.collection('config').doc('github_token').get();
                 if (!configDoc.exists || !configDoc.data().github_token) {
                     throw new Error('GitHub token not found. Please set up your token first.');
                 }

@@ -340,7 +340,8 @@ function renderArticles() {
             try {
                 const date = new Date(article.published);
                 if (!isNaN(date.getTime())) {
-                    publishedDate = date.toLocaleDateString('en-US', {
+                    // Use Australian date format (DD/MM/YYYY)
+                    publishedDate = date.toLocaleDateString('en-AU', {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit'
@@ -449,10 +450,11 @@ function openArticleModal(articleId) {
                 // Try to create a Date object and format it properly
                 const publishDate = new Date(article.published);
                 if (!isNaN(publishDate.getTime())) {
-                    formattedDate = publishDate.toLocaleDateString('en-US', {
+                    // Use Australian date format (DD/MM/YYYY)
+                    formattedDate = publishDate.toLocaleDateString('en-AU', {
                         year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
+                        month: '2-digit',
+                        day: '2-digit'
                     });
                 } else {
                     // If date parsing fails, use the original string

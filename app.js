@@ -450,8 +450,9 @@ function triggerGitHubWorkflow() {
                 const repo = githubConfig.repoName;
                 const workflowFileName = githubConfig.workflowId;
                 
-                // GitHub Actions workflow dispatch URL
-                const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`;
+                // GitHub Actions direct workflow dispatch URL
+                // This URL takes you directly to the "Run workflow" page with the form already open
+                const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}/workflow_dispatch`;
                 
                 // Open GitHub Actions in a new tab
                 window.open(workflowUrl, '_blank');

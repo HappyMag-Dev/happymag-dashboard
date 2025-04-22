@@ -58,6 +58,12 @@ function loadGitHubToken() {
     
     return db.collection('system').doc('config').get()
         .then(doc => {
+            console.log('Firebase doc retrieval attempt complete');
+            console.log('Document exists:', doc.exists);
+            if (doc.exists) {
+                console.log('Document data:', Object.keys(doc.data() || {}));
+            }
+            
             if (doc.exists && doc.data().github_token) {
                 const token = doc.data().github_token;
                 if (token.length > 0) {
@@ -416,8 +422,30 @@ function openArticleModal(articleId) {
     setTimeout(() => {
         originalContentEl.innerHTML = `<p>${article.body || 'No content available'}</p>`;
         
+        // Format the date properly
+        let formattedDate = 'Unknown date';
+        if (article.published) {
+            try {
+                // Try to create a Date object and format it properly
+                const publishDate = new Date(article.published);
+                if (!isNaN(publishDate.getTime())) {
+                    formattedDate = publishDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } else {
+                    // If date parsing fails, use the original string
+                    formattedDate = article.published;
+                }
+            } catch (e) {
+                console.error('Error formatting date:', e);
+                formattedDate = article.published; // Use the original string as fallback
+            }
+        }
+        
         // Set date and URL
-        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${article.published || 'Unknown date'}</span>`;
+        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${formattedDate}</span>`;
         modalUrlEl.textContent = article.url || 'Source URL';
         modalUrlEl.href = article.url || '#';
         document.getElementById('view-original-btn').href = article.url || '#';
@@ -493,6 +521,12 @@ function triggerGitHubWorkflow() {
                     console.log('GitHub token not loaded, fetching from Firebase...');
                     try {
                         const doc = await db.collection('system').doc('config').get();
+                        console.log('Workflow trigger - doc exists:', doc.exists);
+                        if (doc.exists) {
+                            console.log('Workflow trigger - doc data keys:', Object.keys(doc.data() || {}));
+                            console.log('Workflow trigger - github_token exists:', !!doc.data().github_token);
+                        }
+                        
                         if (doc.exists && doc.data().github_token) {
                             githubConfig.accessToken = doc.data().github_token;
                             console.log('GitHub token loaded successfully from Firebase');

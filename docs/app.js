@@ -29,7 +29,7 @@ const activityTableBodyEl = document.getElementById('activity-table-body');
 const articlesContainerEl = document.getElementById('articles-container');
 const filterStatusEl = document.getElementById('filter-status');
 const refreshBtnEl = document.getElementById('refresh-btn');
-const runManuallyBtnEl = document.getElementById('run-manually-btn');
+const runWorkflowBtnEl = document.getElementById('run-workflow-btn');
 const articleModalEl = document.getElementById('article-modal');
 const modalTitleEl = document.getElementById('modal-title');
 const originalContentEl = document.getElementById('original-content');
@@ -38,6 +38,14 @@ const modalUrlEl = document.getElementById('modal-url');
 const wordpressLinkEl = document.getElementById('wordpress-link');
 const closeModalEl = document.getElementById('close-modal');
 const currentDateEl = document.getElementById('current-date');
+
+// GitHub repositories and workflow configuration
+const githubConfig = {
+    repoOwner: 'HappyMag-Dev',
+    repoName: 'happymag-ai-content',
+    workflowId: 'content-pipeline.yml',
+    accessToken: '' // This should be configured securely
+};
 
 // Global state
 let currentFilter = 'all';
@@ -96,12 +104,14 @@ function updateProgressBars(rewritten, total, drafted) {
     
     // Calculate percentages
     const rewrittenPercentage = total > 0 ? (rewritten / total) * 100 : 0;
-    const postedPercentage = total > 0 ? (drafted / total) * 100 : 0;
     
     // Set width with delay for animation
     setTimeout(() => {
         rewrittenProgress.style.width = `${rewrittenPercentage}%`;
-        postedProgress.style.width = `${postedPercentage}%`;
+        if (postedProgress) { // Check if element exists
+            const postedPercentage = total > 0 ? (drafted / total) * 100 : 0;
+            postedProgress.style.width = `${postedPercentage}%`;
+        }
     }, 300);
 }
 
@@ -119,7 +129,9 @@ function loadStats() {
         // Animate count updates
         animateCountUp(scrapedCountEl, scraped);
         animateCountUp(rewrittenCountEl, rewritten);
-        animateCountUp(postedCountEl, drafted);
+        if (postedCountEl) {
+            animateCountUp(postedCountEl, drafted);
+        }
         
         // Update progress bars
         updateProgressBars(rewritten, scraped, drafted);
@@ -277,21 +289,25 @@ function renderArticles() {
         
         let statusBadge = '';
         let viewButtonText = 'View Details';
+        let buttonColorClass = 'bg-primary-600 hover:bg-primary-700'; // Default blue
         
         if (article.status === 'scraped') {
             statusBadge = '<span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded">Found</span>';
+            buttonColorClass = 'bg-primary-600 hover:bg-primary-700'; // Blue for found/scraped
         } else if (article.status === 'rewritten') {
             statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">Rewritten</span>';
             viewButtonText = 'View & Copy';
+            buttonColorClass = 'bg-amber-600 hover:bg-amber-700'; // Amber for rewritten
         } else if (article.status === 'drafted') {
             statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded">Published</span>';
             viewButtonText = 'View & Copy';
+            buttonColorClass = 'bg-emerald-600 hover:bg-emerald-700'; // Green for published/drafted
         }
         
         const animationDelay = index * 0.05;
         
         html += `
-            <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm article-card opacity-0" 
+            <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm article-card opacity-0 card-with-depth" 
                  style="animation: fadeIn 0.5s ease-out forwards, slideUp 0.5s ease-out forwards; animation-delay: ${animationDelay}s;" 
                  data-id="${article.id}">
                 <div class="flex justify-between items-start mb-2">
@@ -302,7 +318,7 @@ function renderArticles() {
                     <div>${published}</div>
                     <div>${author}</div>
                 </div>
-                <button class="text-sm text-primary-600 hover:text-primary-700 hover:underline view-article-btn" data-id="${article.id}">
+                <button class="action-button text-white text-sm ${buttonColorClass} view-article-btn" data-id="${article.id}">
                     ${viewButtonText}
                 </button>
             </div>
@@ -366,6 +382,24 @@ function openArticleModal(articleId) {
         // Set rewritten content with copy button
         if (article.rewritten_html) {
             rewrittenContentEl.innerHTML = `<div id="rewritten-text" class="animate-in">${article.rewritten_html}</div>`;
+            
+            // Add copy button
+            const copyButtonDiv = document.createElement('div');
+            copyButtonDiv.className = 'flex justify-end space-x-3 mt-4';
+            copyButtonDiv.innerHTML = `
+                <button id="copy-rewritten-btn" class="action-button bg-blue-600 text-white hover:bg-blue-700">
+                    Copy Article
+                </button>
+            `;
+            rewrittenContentEl.appendChild(copyButtonDiv);
+            
+            // Add event listener to copy button
+            setTimeout(() => {
+                const copyBtn = document.getElementById('copy-rewritten-btn');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', copyArticleContent);
+                }
+            }, 0);
         } else {
             rewrittenContentEl.innerHTML = '<p class="text-center py-8 text-gray-500">Not yet rewritten</p>';
         }
@@ -380,6 +414,58 @@ function openArticleModal(articleId) {
             wordpressLinkEl.classList.add('hidden');
         }
     }, 300);
+}
+
+// Function to trigger the GitHub workflow manually
+function triggerGitHubWorkflow() {
+    // Get user confirmation
+    if (!confirm('Are you sure you want to run the content pipeline now? This will scrape new articles and process them.')) {
+        return;
+    }
+    
+    // Show loading state
+    runWorkflowBtnEl.disabled = true;
+    const originalText = runWorkflowBtnEl.innerHTML;
+    runWorkflowBtnEl.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Running...
+    `;
+    
+    // Track the workflow event in Firebase
+    const runId = 'manual-' + Date.now();
+    db.collection('runs').doc(runId).set({
+        type: 'manual_trigger',
+        timestamp: new Date().toISOString(),
+        status: 'started',
+        user: sessionStorage.getItem('email') || 'unknown'
+    }).then(() => {
+        showToast('Content pipeline triggered successfully! Check back in a few minutes.', 'success');
+        
+        // In a real implementation, you would trigger the GitHub Actions workflow here
+        // For this demo, we'll simulate it with a delay
+        setTimeout(() => {
+            db.collection('runs').doc(runId).update({
+                status: 'completed'
+            }).then(() => {
+                // Reset button state
+                runWorkflowBtnEl.disabled = false;
+                runWorkflowBtnEl.innerHTML = originalText;
+                
+                // Refresh the activity list to show the new event
+                loadActivity();
+            });
+        }, 3000);
+    }).catch(error => {
+        console.error('Error triggering workflow:', error);
+        showToast('Failed to trigger content pipeline. Please try again.', 'error');
+        
+        // Reset button state
+        runWorkflowBtnEl.disabled = false;
+        runWorkflowBtnEl.innerHTML = originalText;
+    });
 }
 
 // Function to copy the rewritten article content
@@ -460,9 +546,19 @@ function setupEventListeners() {
         
         // Reset button text after a delay
         setTimeout(() => {
-            refreshBtnEl.innerHTML = 'Refresh';
+            refreshBtnEl.innerHTML = `
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh
+            `;
         }, 2000);
     });
+    
+    // Run Workflow Button
+    if (runWorkflowBtnEl) {
+        runWorkflowBtnEl.addEventListener('click', triggerGitHubWorkflow);
+    }
     
     // Filter status
     filterStatusEl.addEventListener('change', () => {

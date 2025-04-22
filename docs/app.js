@@ -333,7 +333,27 @@ function renderArticles() {
     let html = '';
     filteredArticles.forEach((article, index) => {
         const title = article.title || 'Untitled Article';
-        const published = article.published || 'Unknown date';
+        
+        // Format the published date properly
+        let publishedDate = 'Unknown date';
+        if (article.published) {
+            try {
+                const date = new Date(article.published);
+                if (!isNaN(date.getTime())) {
+                    publishedDate = date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    });
+                } else {
+                    publishedDate = article.published;
+                }
+            } catch (e) {
+                console.error('Error formatting date in card:', e);
+                publishedDate = article.published;
+            }
+        }
+        
         const author = article.author || 'Unknown author';
         
         let statusBadge = '';
@@ -364,7 +384,7 @@ function renderArticles() {
                 </div>
                 <h3 class="font-semibold mb-2 line-clamp-2">${title}</h3>
                 <div class="text-sm text-gray-500 mb-4">
-                    <div>${published}</div>
+                    <div>${publishedDate}</div>
                     <div>${author}</div>
                 </div>
                 <button class="action-button text-white text-sm ${buttonColorClass} view-article-btn" data-id="${article.id}">

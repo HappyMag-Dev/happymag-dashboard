@@ -46,6 +46,7 @@ let articles = [];
 function initDashboard() {
     // Update timestamps
     updateLastUpdated();
+    updateCurrentDate();
     
     // Load data
     loadStats();
@@ -60,6 +61,20 @@ function initDashboard() {
 function updateLastUpdated() {
     const now = new Date();
     lastUpdatedEl.textContent = `Last updated: ${now.toLocaleString()}`;
+}
+
+// Update the current date in a clean format
+function updateCurrentDate() {
+    const now = new Date();
+    const options = { 
+        month: 'long', 
+        day: 'numeric',
+        year: 'numeric'
+    };
+    const currentDateEl = document.getElementById('current-date');
+    if (currentDateEl) {
+        currentDateEl.textContent = now.toLocaleDateString('en-US', options);
+    }
 }
 
 // Load statistics
@@ -102,9 +117,34 @@ function loadStats() {
         scrapedTodayEl.textContent = `Today: ${scrapedToday}`;
         rewrittenTodayEl.textContent = `Today: ${rewrittenToday}`;
         postedTodayEl.textContent = `Today: ${draftedToday}`;
+        
+        // Update progress bars after loading stats
+        updateProgressBars(scraped, rewritten, drafted);
     }).catch(error => {
         console.error("Error loading stats:", error);
     });
+}
+
+// Update progress bars based on stats
+function updateProgressBars(scraped, rewritten, drafted) {
+    // Only update if we have articles
+    if (scraped > 0) {
+        // Calculate percentages
+        const rewrittenPercent = Math.round((rewritten / scraped) * 100);
+        const postedPercent = Math.round((drafted / scraped) * 100);
+        
+        // Update progress bars if they exist
+        const rewrittenProgressEl = document.getElementById('rewritten-progress');
+        const postedProgressEl = document.getElementById('posted-progress');
+        
+        if (rewrittenProgressEl) {
+            rewrittenProgressEl.style.width = `${rewrittenPercent}%`;
+        }
+        
+        if (postedProgressEl) {
+            postedProgressEl.style.width = `${postedPercent}%`;
+        }
+    }
 }
 
 // Load recent activity
@@ -127,7 +167,19 @@ function loadActivity() {
             snapshot.forEach(doc => {
                 const run = doc.data();
                 const timestamp = new Date(run.timestamp).toLocaleString();
-                const type = run.type.charAt(0).toUpperCase() + run.type.slice(1);
+                
+                // Convert technical terms to user-friendly terms
+                let type = '';
+                if (run.type === 'scrape') {
+                    type = 'Finding Articles';
+                } else if (run.type === 'rewrite') {
+                    type = 'Rewriting Articles';
+                } else if (run.type === 'wordpress' || run.type === 'wordpress_draft') {
+                    type = 'Publishing Articles';
+                } else {
+                    // Capitalize first letter as fallback
+                    type = run.type.charAt(0).toUpperCase() + run.type.slice(1);
+                }
                 
                 let results = '';
                 if (run.stats) {
@@ -136,14 +188,14 @@ function loadActivity() {
                     } else if (run.type === 'rewrite') {
                         results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_rewritten} rewritten`;
                     } else if (run.type === 'wordpress') {
-                        results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_posted} posted`;
+                        results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_posted} published`;
                     } else if (run.type === 'wordpress_draft') {
-                        results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_drafted} drafted`;
+                        results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_drafted} published`;
                     }
                 }
                 
                 html += `
-                    <tr class="border-t border-gray-200">
+                    <tr class="border-t border-gray-100 hover:bg-gray-50">
                         <td class="p-4">${timestamp}</td>
                         <td class="p-4">${type}</td>
                         <td class="p-4">${results}</td>
@@ -200,7 +252,7 @@ function renderArticles() {
     // Check if there are no articles
     if (filteredArticles.length === 0) {
         articlesContainerEl.innerHTML = `
-            <div class="col-span-3 text-center p-4">
+            <div class="col-span-1 md:col-span-3 text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
                 <p class="text-gray-500">No articles found</p>
             </div>
         `;
@@ -215,29 +267,32 @@ function renderArticles() {
         const author = article.author || 'Unknown author';
         
         let statusBadge = '';
+        let statusColor = 'blue';
         let viewButtonText = 'View Details';
         
         if (article.status === 'scraped') {
-            statusBadge = '<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Scraped</span>';
+            statusBadge = '<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Found</span>';
         } else if (article.status === 'rewritten') {
-            statusBadge = '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Rewritten</span>';
-            viewButtonText = 'View & Copy';
+            statusBadge = '<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Rewritten</span>';
+            statusColor = 'yellow';
+            viewButtonText = 'View Content';
         } else if (article.status === 'drafted') {
-            statusBadge = '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Drafted</span>';
-            viewButtonText = 'View & Copy';
+            statusBadge = '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Published</span>';
+            statusColor = 'green';
+            viewButtonText = 'View Content';
         }
         
         html += `
-            <div class="bg-gray-50 rounded border border-gray-200 p-4 shadow-sm article-card hover:shadow transition-shadow" data-id="${article.id}">
+            <div class="bg-white rounded-xl border border-${statusColor}-100 p-4 shadow-sm article-card hover:shadow" data-id="${article.id}">
                 <div class="flex justify-between items-start mb-2">
                     ${statusBadge}
                 </div>
-                <h3 class="font-semibold mb-2 line-clamp-2">${title}</h3>
+                <h3 class="font-medium mb-2 line-clamp-2">${title}</h3>
                 <div class="text-sm text-gray-500 mb-4">
                     <div>${published}</div>
                     <div>${author}</div>
                 </div>
-                <button class="text-sm text-blue-600 hover:underline view-article-btn" data-id="${article.id}">
+                <button class="w-full py-2 px-4 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm transition-colors view-article-btn" data-id="${article.id}">
                     ${viewButtonText}
                 </button>
             </div>
@@ -247,10 +302,19 @@ function renderArticles() {
     articlesContainerEl.innerHTML = html;
     
     // Add event listeners to view article buttons
-    document.querySelectorAll('.view-article-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const articleId = btn.getAttribute('data-id');
-            openArticleModal(articleId);
+    document.querySelectorAll('.view-article-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            openArticleModal(button.dataset.id);
+        });
+    });
+    
+    // Also add event listeners to the whole article card
+    document.querySelectorAll('.article-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            // Don't trigger if they clicked the button (which has its own handler)
+            if (!e.target.closest('.view-article-btn')) {
+                openArticleModal(card.dataset.id);
+            }
         });
     });
 }

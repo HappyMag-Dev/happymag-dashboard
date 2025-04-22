@@ -13,44 +13,93 @@
             transform: translateY(-2px);
             transition: transform 0.3s ease;
         }
+        .stat-card {
+            transition: all 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
     </style>
 </head>
-<body class="bg-white text-gray-900 min-h-screen">
+<body class="bg-gray-50 text-gray-900 min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
-        <header class="mb-10">
-            <div class="flex justify-between items-center border-b border-gray-200 pb-4">
-                <h1 class="text-3xl font-bold">Happy Mag AI Content Dashboard</h1>
-                <div class="flex items-center space-x-4">
-                    <div class="text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
+        <header class="mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-200 pb-4">
+                <h1 class="text-3xl font-bold">Happy Mag Content Dashboard</h1>
+                <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                    <div class="text-lg font-medium" id="current-date">April 22, 2024</div>
                     <button id="logout-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Sign Out</button>
                 </div>
             </div>
         </header>
 
-        <!-- Stats Overview -->
+        <!-- Stats Overview with Bento Grid -->
         <section class="mb-10">
-            <h2 class="text-xl font-semibold mb-4">System Overview</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
-                    <h3 class="text-sm uppercase tracking-wider text-gray-500 mb-1">Scraped</h3>
-                    <div class="flex items-end">
-                        <span class="text-3xl font-bold" id="scraped-count">0</span>
-                        <span class="text-gray-500 ml-2 text-sm" id="scraped-today">Today: 0</span>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <!-- Main stats card - spans 2 columns -->
+                <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 stat-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-lg font-medium text-gray-800">Dashboard Overview</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Content status at a glance
+                    </p>
+                    <!-- Today's activity summary -->
+                    <div class="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="ml-2 text-sm font-medium text-blue-800">Today's Activity</span>
+                        </div>
+                        <div class="mt-2 grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <p class="text-xs text-gray-500">Found</p>
+                                <p class="text-lg font-bold text-blue-700" id="scraped-today">0</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Rewritten</p>
+                                <p class="text-lg font-bold text-blue-700" id="rewritten-today">0</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Published</p>
+                                <p class="text-lg font-bold text-blue-700" id="posted-today">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
+                </div>
+
+                <!-- Three stats cards - each spans 2 columns on desktop, full width on mobile -->
+                <div class="col-span-1 md:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Articles Found</h3>
+                        <p class="text-3xl font-bold mt-1 text-gray-800" id="scraped-count">0</p>
+                    </div>
+                    <div class="mt-4 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-blue-400 h-2 rounded-full" style="width: 100%"></div>
                     </div>
                 </div>
-                <div class="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
-                    <h3 class="text-sm uppercase tracking-wider text-gray-500 mb-1">Rewritten</h3>
-                    <div class="flex items-end">
-                        <span class="text-3xl font-bold" id="rewritten-count">0</span>
-                        <span class="text-gray-500 ml-2 text-sm" id="rewritten-today">Today: 0</span>
+                
+                <div class="col-span-1 md:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Articles Rewritten</h3>
+                        <p class="text-3xl font-bold mt-1 text-gray-800" id="rewritten-count">0</p>
+                    </div>
+                    <div class="mt-4 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-yellow-400 h-2 rounded-full" id="rewritten-progress" style="width: 0%"></div>
                     </div>
                 </div>
-                <div class="bg-gray-50 p-6 rounded shadow-sm border border-gray-200">
-                    <h3 class="text-sm uppercase tracking-wider text-gray-500 mb-1">Drafted to WordPress</h3>
-                    <div class="flex items-end">
-                        <span class="text-3xl font-bold" id="posted-count">0</span>
-                        <span class="text-gray-500 ml-2 text-sm" id="posted-today">Today: 0</span>
+                
+                <div class="col-span-1 md:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Articles Published</h3>
+                        <p class="text-3xl font-bold mt-1 text-gray-800" id="posted-count">0</p>
+                    </div>
+                    <div class="mt-4 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-green-400 h-2 rounded-full" id="posted-progress" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -59,18 +108,18 @@
         <!-- Recent Articles (Moved up) -->
         <section class="mb-10">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Recent Articles</h2>
+                <h2 class="text-xl font-medium">Recent Articles</h2>
                 <div class="flex space-x-2">
-                    <select id="filter-status" class="border border-gray-300 rounded p-2">
+                    <select id="filter-status" class="border border-gray-300 rounded p-2 text-sm">
                         <option value="all">All Articles</option>
-                        <option value="scraped">Scraped</option>
-                        <option value="rewritten">Rewritten</option>
-                        <option value="drafted">Drafted to WordPress</option>
+                        <option value="scraped">Found Articles</option>
+                        <option value="rewritten">Rewritten Articles</option>
+                        <option value="drafted">Published Articles</option>
                     </select>
                 </div>
             </div>
             <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="flex items-center justify-center h-40 bg-gray-50 rounded p-4">
+                <div class="flex items-center justify-center h-40 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                     <span class="text-gray-400">Loading articles...</span>
                 </div>
             </div>
@@ -79,23 +128,20 @@
         <!-- Recent Activity (Now below Articles) -->
         <section class="mb-10">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Recent Activity</h2>
+                <h2 class="text-xl font-medium">Recent Activity</h2>
                 <div class="flex space-x-2">
-                    <button class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800" id="refresh-btn">
+                    <button class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800" id="refresh-btn">
                         Refresh
-                    </button>
-                    <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50" id="run-manually-btn">
-                        Run Manually
                     </button>
                 </div>
             </div>
-            <div class="bg-gray-50 rounded shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <table class="w-full">
                     <thead>
-                        <tr class="bg-gray-100 text-left">
-                            <th class="p-4 font-semibold">Timestamp</th>
-                            <th class="p-4 font-semibold">Type</th>
-                            <th class="p-4 font-semibold">Results</th>
+                        <tr class="bg-gray-50 text-left border-b border-gray-100">
+                            <th class="p-4 font-medium">Date & Time</th>
+                            <th class="p-4 font-medium">Action</th>
+                            <th class="p-4 font-medium">Results</th>
                         </tr>
                     </thead>
                     <tbody id="activity-table-body">
@@ -110,33 +156,33 @@
 
     <!-- Article Modal -->
     <div id="article-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-        <div class="bg-white rounded max-w-4xl w-full max-h-screen overflow-y-auto mx-4">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold" id="modal-title">Article Comparison</h2>
-                <button id="close-modal" class="text-2xl">&times;</button>
+        <div class="bg-white rounded-xl max-w-4xl w-full max-h-screen overflow-y-auto mx-4 shadow-xl">
+            <div class="flex justify-between items-center p-4 border-b border-gray-100">
+                <h2 class="text-xl font-medium" id="modal-title">Article Details</h2>
+                <button id="close-modal" class="text-2xl hover:text-gray-700">&times;</button>
             </div>
             <div class="p-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <h3 class="font-semibold mb-2">Original Article</h3>
-                        <div id="original-content" class="bg-gray-50 p-4 rounded border border-gray-200 max-h-96 overflow-y-auto">
+                        <h3 class="font-medium mb-2">Original Article</h3>
+                        <div id="original-content" class="bg-gray-50 p-4 rounded-lg border border-gray-100 max-h-96 overflow-y-auto">
                             Loading original content...
                         </div>
                     </div>
                     <div>
-                        <h3 class="font-semibold mb-2">Rewritten Article</h3>
-                        <div id="rewritten-content" class="bg-gray-50 p-4 rounded border border-gray-200 max-h-96 overflow-y-auto">
+                        <h3 class="font-medium mb-2">Rewritten Article</h3>
+                        <div id="rewritten-content" class="bg-gray-50 p-4 rounded-lg border border-gray-100 max-h-96 overflow-y-auto">
                             Loading rewritten content...
                         </div>
                     </div>
                 </div>
                 <div class="mt-4 flex justify-between items-center">
                     <div class="text-sm text-gray-500" id="modal-metadata">
-                        Original URL: <a href="#" target="_blank" id="modal-url" class="text-blue-600 hover:underline">Loading...</a>
+                        Original Source: <a href="#" target="_blank" id="modal-url" class="text-blue-600 hover:underline">Loading...</a>
                     </div>
                     <div class="text-sm">
                         <a href="#" target="_blank" id="wordpress-link" class="text-blue-600 hover:underline hidden">
-                            View in WordPress
+                            View on Website
                         </a>
                     </div>
                 </div>

@@ -7,65 +7,130 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'pulse-slow': 'pulse 3s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                    },
+                },
+            },
+        }
+    </script>
     <style>
         /* Additional custom styles */
+        body {
+            background-color: #f8fafc;
+        }
+        .article-card {
+            transition: all 0.3s ease;
+        }
         .article-card:hover {
-            transform: translateY(-2px);
-            transition: transform 0.3s ease;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
         .stat-card {
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
         .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Progress bar animation */
+        .progress-bar {
+            transition: width 1.5s ease;
+        }
+        
+        /* ReactBits-inspired animations */
+        .animate-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .stat-number {
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* Subtle patterns */
+        .pattern-bg {
+            background-color: #f8fafc;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230ea5e9' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
+<body class="pattern-bg text-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 py-6 animate-fade-in">
         <!-- Header -->
-        <header class="mb-8">
+        <header class="mb-6">
             <div class="flex flex-col md:flex-row justify-between items-center border-b border-gray-200 pb-4">
-                <h1 class="text-3xl font-bold">Happy Mag Content Dashboard</h1>
+                <h1 class="text-3xl font-bold text-gray-800">Happy Mag Content</h1>
                 <div class="flex items-center space-x-4 mt-4 md:mt-0">
-                    <div class="text-lg font-medium" id="current-date">April 22, 2024</div>
-                    <button id="logout-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Sign Out</button>
+                    <div class="text-lg font-medium text-primary-700" id="current-date">April 22, 2024</div>
+                    <button id="logout-btn" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors">Sign Out</button>
                 </div>
             </div>
         </header>
 
         <!-- Stats Overview with Bento Grid -->
-        <section class="mb-10">
-            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <section class="mb-8 animate-slide-up" style="animation-delay: 0.1s">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-5">
                 <!-- Main stats card - spans 2 columns -->
                 <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 stat-card">
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-lg font-medium text-gray-800">Dashboard Overview</h3>
                     </div>
-                    <p class="text-sm text-gray-600 mb-4">
+                    <p class="text-sm text-gray-600 mb-5">
                         Content status at a glance
                     </p>
                     <!-- Today's activity summary -->
-                    <div class="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div class="p-4 bg-primary-50 rounded-lg border border-primary-100">
                         <div class="flex items-center">
-                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            <span class="ml-2 text-sm font-medium text-blue-800">Today's Activity</span>
+                            <span class="ml-2 text-sm font-medium text-primary-800">Today's Activity</span>
                         </div>
-                        <div class="mt-2 grid grid-cols-3 gap-2 text-center">
+                        <div class="mt-3 grid grid-cols-3 gap-2 text-center">
                             <div>
                                 <p class="text-xs text-gray-500">Found</p>
-                                <p class="text-lg font-bold text-blue-700" id="scraped-today">0</p>
+                                <p class="text-lg font-bold text-primary-700 stat-number" id="scraped-today">0</p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500">Rewritten</p>
-                                <p class="text-lg font-bold text-blue-700" id="rewritten-today">0</p>
+                                <p class="text-lg font-bold text-primary-700 stat-number" id="rewritten-today">0</p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500">Published</p>
-                                <p class="text-lg font-bold text-blue-700" id="posted-today">0</p>
+                                <p class="text-lg font-bold text-primary-700 stat-number" id="posted-today">0</p>
                             </div>
                         </div>
                     </div>
@@ -73,44 +138,44 @@
                 </div>
 
                 <!-- Three stats cards - each spans 2 columns on desktop, full width on mobile -->
-                <div class="col-span-1 md:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
+                <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
                     <div>
                         <h3 class="text-sm font-medium text-gray-500">Articles Found</h3>
-                        <p class="text-3xl font-bold mt-1 text-gray-800" id="scraped-count">0</p>
+                        <p class="text-4xl font-bold mt-2 text-gray-800 stat-number" id="scraped-count">0</p>
                     </div>
-                    <div class="mt-4 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div class="bg-blue-400 h-2 rounded-full" style="width: 100%"></div>
+                    <div class="mt-5 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-primary-400 h-2 rounded-full progress-bar" style="width: 100%"></div>
                     </div>
                 </div>
                 
-                <div class="col-span-1 md:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
+                <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
                     <div>
                         <h3 class="text-sm font-medium text-gray-500">Articles Rewritten</h3>
-                        <p class="text-3xl font-bold mt-1 text-gray-800" id="rewritten-count">0</p>
+                        <p class="text-4xl font-bold mt-2 text-gray-800 stat-number" id="rewritten-count">0</p>
                     </div>
-                    <div class="mt-4 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div class="bg-yellow-400 h-2 rounded-full" id="rewritten-progress" style="width: 0%"></div>
+                    <div class="mt-5 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-amber-400 h-2 rounded-full progress-bar" id="rewritten-progress" style="width: 0%"></div>
                     </div>
                 </div>
                 
-                <div class="col-span-1 md:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
+                <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
                     <div>
                         <h3 class="text-sm font-medium text-gray-500">Articles Published</h3>
-                        <p class="text-3xl font-bold mt-1 text-gray-800" id="posted-count">0</p>
+                        <p class="text-4xl font-bold mt-2 text-gray-800 stat-number" id="posted-count">0</p>
                     </div>
-                    <div class="mt-4 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div class="bg-green-400 h-2 rounded-full" id="posted-progress" style="width: 0%"></div>
+                    <div class="mt-5 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-emerald-400 h-2 rounded-full progress-bar" id="posted-progress" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- Recent Articles (Moved up) -->
-        <section class="mb-10">
+        <section class="mb-8 animate-slide-up" style="animation-delay: 0.2s">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-medium">Recent Articles</h2>
+                <h2 class="text-xl font-medium text-gray-800">Recent Articles</h2>
                 <div class="flex space-x-2">
-                    <select id="filter-status" class="border border-gray-300 rounded p-2 text-sm">
+                    <select id="filter-status" class="border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                         <option value="all">All Articles</option>
                         <option value="scraped">Found Articles</option>
                         <option value="rewritten">Rewritten Articles</option>
@@ -118,7 +183,7 @@
                     </select>
                 </div>
             </div>
-            <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div id="articles-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <div class="flex items-center justify-center h-40 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                     <span class="text-gray-400">Loading articles...</span>
                 </div>
@@ -126,11 +191,11 @@
         </section>
 
         <!-- Recent Activity (Now below Articles) -->
-        <section class="mb-10">
+        <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-medium">Recent Activity</h2>
+                <h2 class="text-xl font-medium text-gray-800">Recent Activity</h2>
                 <div class="flex space-x-2">
-                    <button class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800" id="refresh-btn">
+                    <button class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors" id="refresh-btn">
                         Refresh
                     </button>
                 </div>
@@ -155,33 +220,33 @@
     </div>
 
     <!-- Article Modal -->
-    <div id="article-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div id="article-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 animate-in">
         <div class="bg-white rounded-xl max-w-4xl w-full max-h-screen overflow-y-auto mx-4 shadow-xl">
             <div class="flex justify-between items-center p-4 border-b border-gray-100">
-                <h2 class="text-xl font-medium" id="modal-title">Article Details</h2>
-                <button id="close-modal" class="text-2xl hover:text-gray-700">&times;</button>
+                <h2 class="text-xl font-medium text-gray-800" id="modal-title">Article Details</h2>
+                <button id="close-modal" class="text-2xl hover:text-gray-700 transition-colors">&times;</button>
             </div>
-            <div class="p-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                        <h3 class="font-medium mb-2">Original Article</h3>
+                        <h3 class="font-medium mb-2 text-gray-700">Original Article</h3>
                         <div id="original-content" class="bg-gray-50 p-4 rounded-lg border border-gray-100 max-h-96 overflow-y-auto">
                             Loading original content...
                         </div>
                     </div>
                     <div>
-                        <h3 class="font-medium mb-2">Rewritten Article</h3>
+                        <h3 class="font-medium mb-2 text-gray-700">Rewritten Article</h3>
                         <div id="rewritten-content" class="bg-gray-50 p-4 rounded-lg border border-gray-100 max-h-96 overflow-y-auto">
                             Loading rewritten content...
                         </div>
                     </div>
                 </div>
-                <div class="mt-4 flex justify-between items-center">
+                <div class="mt-5 flex justify-between items-center">
                     <div class="text-sm text-gray-500" id="modal-metadata">
-                        Original Source: <a href="#" target="_blank" id="modal-url" class="text-blue-600 hover:underline">Loading...</a>
+                        Original Source: <a href="#" target="_blank" id="modal-url" class="text-primary-600 hover:underline">Loading...</a>
                     </div>
                     <div class="text-sm">
-                        <a href="#" target="_blank" id="wordpress-link" class="text-blue-600 hover:underline hidden">
+                        <a href="#" target="_blank" id="wordpress-link" class="text-primary-600 hover:underline hidden">
                             View on Website
                         </a>
                     </div>
@@ -189,6 +254,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden textarea for copy operations -->
+    <textarea id="hidden-textarea" style="position: absolute; left: -9999px;" aria-hidden="true"></textarea>
 
     <!-- Authentication Check -->
     <script>

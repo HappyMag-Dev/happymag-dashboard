@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Workflow Debug Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="debug.js"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6">GitHub Workflow Debug Tool</h1>
+        
+        <form id="debug-form" class="space-y-4">
+            <div>
+                <label class="block text-gray-700 mb-1">GitHub Token</label>
+                <input id="github-token" type="password" placeholder="Your GitHub Personal Access Token" class="w-full p-2 border rounded" required>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 mb-1">Repository Owner</label>
+                    <input id="repo-owner" type="text" value="HappyMag-Dev" placeholder="e.g., HappyMag-Dev" class="w-full p-2 border rounded" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-1">Repository Name</label>
+                    <input id="repo-name" type="text" value="happymag-ai-content" placeholder="e.g., happymag-ai-content" class="w-full p-2 border rounded" required>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 mb-1">Workflow ID (filename)</label>
+                    <input id="workflow-id" type="text" value="content-pipeline.yml" placeholder="e.g., content-pipeline.yml" class="w-full p-2 border rounded" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-1">Branch Name</label>
+                    <input id="branch-name" type="text" value="main" placeholder="e.g., main" class="w-full p-2 border rounded" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                Test Connection & Trigger Workflow
+            </button>
+        </form>
+        
+        <div class="mt-6">
+            <h2 class="text-lg font-semibold mb-2">Results:</h2>
+            <div id="debug-result" class="border rounded-lg p-4 h-60 overflow-y-auto bg-gray-50">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+        
+        <div class="mt-6 text-sm text-gray-600">
+            <p>This tool tests your ability to trigger GitHub Actions workflows via the API.</p>
+            <p class="mt-2">Make sure your GitHub token has the <code>workflow</code> and <code>repo</code> permissions.</p>
+        </div>
+    </div>
+</body>
+</html> 

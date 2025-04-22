@@ -46,13 +46,8 @@
     </script>
     <style>
         /* Additional custom styles */
-        /* Poppins */
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
         body {
             background-color: #f8fafc;
-            font-family: 'Poppins', sans-serif;
-
         }
         .article-card {
             transition: all 0.3s ease;
@@ -86,11 +81,9 @@
         }
         
         /* Enhanced pattern background */
-        /* Enhanced pattern background with dark blue bold lines */
-        /* Enhanced pattern background with dark blue */
         .pattern-bg {
-            background-color: #f0f7ff;
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23075985' fill-opacity='0.15'%3E%3Cpath d='M20 0v40M0 20h40'/%3E%3C/g%3E%3C/svg%3E");
+            background-color: #e6f1fb;
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%230ea5e9' stroke-opacity='0.005' stroke-width='0.1'%3E%3Cpath d='M0 0 L200 0 L200 200 L0 200 Z' /%3E%3C/g%3E%3C/svg%3E");
         }
     </style>
 </head>
@@ -234,57 +227,30 @@
                 <button id="close-modal" class="text-2xl hover:text-gray-700 transition-colors">&times;</button>
             </div>
             <div class="p-5">
-                <!-- SpotlightCard for Original Article -->
-                <div class="relative mb-6 spotlight-card">
-                    <!-- White gradient background -->
-                    <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
-                    
-                    <div class="relative p-6 rounded-xl border border-gray-100 shadow-sm">
-                        <div class="mb-4">
-                            <h3 class="text-lg font-medium text-gray-800 mb-2">Original Article</h3>
-                            <p id="modal-date" class="text-sm text-gray-500 mb-2">Published: <span class="font-medium">Loading date...</span></p>
-                            <p class="text-sm mb-4">Source: <a href="#" target="_blank" id="modal-url" class="text-primary-600 hover:underline">Loading...</a></p>
-                        </div>
-                        
-                        <div id="original-content" class="bg-white p-4 rounded-lg border border-gray-100 max-h-80 overflow-y-auto mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <h3 class="font-medium mb-2 text-gray-700">Original Article</h3>
+                        <div id="original-content" class="bg-gray-50 p-4 rounded-lg border border-gray-100 max-h-96 overflow-y-auto">
                             Loading original content...
                         </div>
-                        
-                        <div class="flex justify-end space-x-3">
-                            <a href="#" target="_blank" id="view-original-btn" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
-                                View Original
-                            </a>
-                        </div>
                     </div>
-                </div>
-                
-                <!-- SpotlightCard for Rewritten Article -->
-                <div class="relative spotlight-card">
-                    <!-- White gradient background -->
-                    <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
-                    
-                    <div class="relative p-6 rounded-xl border border-gray-100 shadow-sm">
-                        <div class="mb-4">
-                            <h3 class="text-lg font-medium text-gray-800 mb-2">Rewritten Article</h3>
-                            <div class="flex items-center">
-                                <a href="#" target="_blank" id="wordpress-link" class="text-primary-600 hover:underline hidden mr-4">
-                                    View on Website
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <div id="rewritten-content" class="bg-white p-4 rounded-lg border border-gray-100 max-h-80 overflow-y-auto mb-4">
+                    <div>
+                        <h3 class="font-medium mb-2 text-gray-700">Rewritten Article</h3>
+                        <div id="rewritten-content" class="bg-gray-50 p-4 rounded-lg border border-gray-100 max-h-96 overflow-y-auto">
                             Loading rewritten content...
                         </div>
-                        
-                        <div class="flex justify-end space-x-3">
-                            <button id="copy-rewritten-btn" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                                Copy Article
-                            </button>
-                        </div>
                     </div>
                 </div>
-                
+                <div class="mt-5 flex justify-between items-center">
+                    <div class="text-sm text-gray-500" id="modal-metadata">
+                        Original Source: <a href="#" target="_blank" id="modal-url" class="text-primary-600 hover:underline">Loading...</a>
+                    </div>
+                    <div class="text-sm">
+                        <a href="#" target="_blank" id="wordpress-link" class="text-primary-600 hover:underline hidden">
+                            View on Website
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

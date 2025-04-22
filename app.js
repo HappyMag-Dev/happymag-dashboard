@@ -434,7 +434,7 @@ function triggerGitHubWorkflow() {
         Running...
     `;
     
-    // Track the workflow event in Firebase
+    // First track the workflow event in Firebase
     const runId = 'manual-' + Date.now();
     db.collection('runs').doc(runId).set({
         type: 'manual_trigger',
@@ -442,24 +442,47 @@ function triggerGitHubWorkflow() {
         status: 'started',
         user: sessionStorage.getItem('email') || 'unknown'
     }).then(() => {
-        showToast('Content pipeline triggered successfully! Check back in a few minutes.', 'success');
-        
-        // In a real implementation, you would trigger the GitHub Actions workflow here
-        // For this demo, we'll simulate it with a delay
-        setTimeout(() => {
-            db.collection('runs').doc(runId).update({
-                status: 'completed'
-            }).then(() => {
-                // Reset button state
+        // Now create the function to make the actual GitHub API request
+        const triggerGitHubAction = async () => {
+            try {
+                // Open a new tab/window to GitHub Actions page for login and manual trigger
+                const owner = githubConfig.repoOwner;
+                const repo = githubConfig.repoName;
+                const workflowFileName = githubConfig.workflowId;
+                
+                // GitHub Actions workflow dispatch URL
+                const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`;
+                
+                // Open GitHub Actions in a new tab
+                window.open(workflowUrl, '_blank');
+                
+                // Update the status right away since we've directed the user
+                showToast('Please complete the workflow trigger in the new browser tab', 'info');
+                
+                // Update Firebase run status
+                await db.collection('runs').doc(runId).update({
+                    status: 'redirected_to_github',
+                    workflow_url: workflowUrl
+                });
+            } catch (error) {
+                console.error('Error opening GitHub workflow:', error);
+                showToast('Error redirecting to GitHub. Try triggering the workflow manually.', 'error');
+                
+                await db.collection('runs').doc(runId).update({
+                    status: 'error',
+                    error: error.message
+                });
+            } finally {
+                // Reset button state in any case
                 runWorkflowBtnEl.disabled = false;
                 runWorkflowBtnEl.innerHTML = originalText;
-                
-                // Refresh the activity list to show the new event
-                loadActivity();
-            });
-        }, 3000);
+            }
+        };
+        
+        // Call the function to trigger the GitHub Action
+        triggerGitHubAction();
     }).catch(error => {
-        console.error('Error triggering workflow:', error);
+        console.error('Error recording workflow trigger:', error);
         showToast('Failed to trigger content pipeline. Please try again.', 'error');
         
         // Reset button state

@@ -44,7 +44,8 @@ const githubConfig = {
     repoOwner: 'HappyMag-Dev',
     repoName: 'happymag-ai-content',
     workflowId: 'content-pipeline.yml',
-    accessToken: '' // This should be configured securely
+    accessToken: '', // This should be configured securely
+    branch: 'main' // Added for the new trigger method
 };
 
 // Global state
@@ -445,33 +446,71 @@ function triggerGitHubWorkflow() {
         // Now create the function to make the actual GitHub API request
         const triggerGitHubAction = async () => {
             try {
-                // Open a new tab/window to GitHub Actions page for login and manual trigger
+                // Get owner, repo and workflow info
                 const owner = githubConfig.repoOwner;
                 const repo = githubConfig.repoName;
                 const workflowFileName = githubConfig.workflowId;
+                const branch = githubConfig.branch || 'main';
                 
-                // GitHub Actions direct workflow dispatch URL
-                // This URL takes you directly to the "Run workflow" page with the form already open
+                // For logging/display purposes
                 const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}`;
                 
-                // Open GitHub Actions in a new tab
-                window.open(workflowUrl, '_blank');
+                // First retrieve the GitHub token from Firebase
+                const configDoc = await db.collection('system').doc('config').get();
+                if (!configDoc.exists || !configDoc.data().github_token) {
+                    throw new Error('GitHub token not found. Please set up your token first.');
+                }
                 
-                // Update the status right away since we've directed the user
-                showToast('Please complete the workflow trigger in the new browser tab', 'info');
+                const token = configDoc.data().github_token;
                 
-                // Update Firebase run status
+                // Update status to attempting API trigger
                 await db.collection('runs').doc(runId).update({
-                    status: 'redirected_to_github',
+                    status: 'api_trigger_attempt',
                     workflow_url: workflowUrl
                 });
+                
+                // Trigger the workflow via GitHub API
+                const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ref: branch
+                    })
+                });
+                
+                if (response.status === 204) {
+                    // 204 No Content is the success response
+                    showToast('Pipeline triggered successfully! Check GitHub Actions for progress.', 'success');
+                    await db.collection('runs').doc(runId).update({
+                        status: 'triggered_via_api',
+                        triggered_at: new Date().toISOString()
+                    });
+                } else {
+                    // If not 204, get error details
+                    const errorText = await response.text();
+                    throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+                }
             } catch (error) {
-                console.error('Error opening GitHub workflow:', error);
-                showToast('Error redirecting to GitHub. Try triggering the workflow manually.', 'error');
+                console.error('Error triggering GitHub workflow:', error);
+                showToast('Error triggering workflow: ' + error.message, 'error');
+                
+                // If API fails, fall back to redirect method
+                const owner = githubConfig.repoOwner;
+                const repo = githubConfig.repoName;
+                const workflowFileName = githubConfig.workflowId;
+                const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}/workflow_dispatch`;
+                
+                window.open(workflowUrl, '_blank');
+                showToast('Redirecting to GitHub for manual trigger instead', 'info');
                 
                 await db.collection('runs').doc(runId).update({
-                    status: 'error',
-                    error: error.message
+                    status: 'error_falling_back_to_redirect',
+                    error: error.message,
+                    workflow_url: workflowUrl
                 });
             } finally {
                 // Reset button state in any case

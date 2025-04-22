@@ -37,6 +37,7 @@ const rewrittenContentEl = document.getElementById('rewritten-content');
 const modalUrlEl = document.getElementById('modal-url');
 const wordpressLinkEl = document.getElementById('wordpress-link');
 const closeModalEl = document.getElementById('close-modal');
+const currentDateEl = document.getElementById('current-date');
 
 // Global state
 let currentFilter = 'all';
@@ -44,9 +45,12 @@ let articles = [];
 
 // Initialize the dashboard
 function initDashboard() {
+    // Set current date
+    const now = new Date();
+    currentDateEl.textContent = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    
     // Update timestamps
     updateLastUpdated();
-    updateCurrentDate();
     
     // Load data
     loadStats();
@@ -63,18 +67,42 @@ function updateLastUpdated() {
     lastUpdatedEl.textContent = `Last updated: ${now.toLocaleString()}`;
 }
 
-// Update the current date in a clean format
-function updateCurrentDate() {
-    const now = new Date();
-    const options = { 
-        month: 'long', 
-        day: 'numeric',
-        year: 'numeric'
-    };
-    const currentDateEl = document.getElementById('current-date');
-    if (currentDateEl) {
-        currentDateEl.textContent = now.toLocaleDateString('en-US', options);
+// Animate count updates
+function animateCountUp(element, targetValue) {
+    const startValue = parseInt(element.textContent) || 0;
+    const duration = 1000; // 1 second animation
+    const startTime = performance.now();
+    
+    function updateCount(currentTime) {
+        const elapsedTime = currentTime - startTime;
+        
+        if (elapsedTime < duration) {
+            const progress = elapsedTime / duration;
+            const currentValue = Math.floor(startValue + (targetValue - startValue) * progress);
+            element.textContent = currentValue;
+            requestAnimationFrame(updateCount);
+        } else {
+            element.textContent = targetValue;
+        }
     }
+    
+    requestAnimationFrame(updateCount);
+}
+
+// Update progress bars
+function updateProgressBars(rewritten, total, drafted) {
+    const rewrittenProgress = document.getElementById('rewritten-progress');
+    const postedProgress = document.getElementById('posted-progress');
+    
+    // Calculate percentages
+    const rewrittenPercentage = total > 0 ? (rewritten / total) * 100 : 0;
+    const postedPercentage = total > 0 ? (drafted / total) * 100 : 0;
+    
+    // Set width with delay for animation
+    setTimeout(() => {
+        rewrittenProgress.style.width = `${rewrittenPercentage}%`;
+        postedProgress.style.width = `${postedPercentage}%`;
+    }, 300);
 }
 
 // Load statistics
@@ -88,9 +116,13 @@ function loadStats() {
         const rewritten = allArticles.filter(article => article.status === 'rewritten' || article.status === 'drafted').length;
         const drafted = allArticles.filter(article => article.status === 'drafted').length;
         
-        scrapedCountEl.textContent = scraped;
-        rewrittenCountEl.textContent = rewritten;
-        postedCountEl.textContent = drafted;
+        // Animate count updates
+        animateCountUp(scrapedCountEl, scraped);
+        animateCountUp(rewrittenCountEl, rewritten);
+        animateCountUp(postedCountEl, drafted);
+        
+        // Update progress bars
+        updateProgressBars(rewritten, scraped, drafted);
         
         // Today's counts
         const today = new Date();
@@ -114,37 +146,12 @@ function loadStats() {
             return draftedDate >= today;
         }).length;
         
-        scrapedTodayEl.textContent = `Today: ${scrapedToday}`;
-        rewrittenTodayEl.textContent = `Today: ${rewrittenToday}`;
-        postedTodayEl.textContent = `Today: ${draftedToday}`;
-        
-        // Update progress bars after loading stats
-        updateProgressBars(scraped, rewritten, drafted);
+        scrapedTodayEl.textContent = scrapedToday;
+        rewrittenTodayEl.textContent = rewrittenToday;
+        postedTodayEl.textContent = draftedToday;
     }).catch(error => {
         console.error("Error loading stats:", error);
     });
-}
-
-// Update progress bars based on stats
-function updateProgressBars(scraped, rewritten, drafted) {
-    // Only update if we have articles
-    if (scraped > 0) {
-        // Calculate percentages
-        const rewrittenPercent = Math.round((rewritten / scraped) * 100);
-        const postedPercent = Math.round((drafted / scraped) * 100);
-        
-        // Update progress bars if they exist
-        const rewrittenProgressEl = document.getElementById('rewritten-progress');
-        const postedProgressEl = document.getElementById('posted-progress');
-        
-        if (rewrittenProgressEl) {
-            rewrittenProgressEl.style.width = `${rewrittenPercent}%`;
-        }
-        
-        if (postedProgressEl) {
-            postedProgressEl.style.width = `${postedPercent}%`;
-        }
-    }
 }
 
 // Load recent activity
@@ -164,22 +171,10 @@ function loadActivity() {
             }
             
             let html = '';
-            snapshot.forEach(doc => {
+            snapshot.forEach((doc, index) => {
                 const run = doc.data();
                 const timestamp = new Date(run.timestamp).toLocaleString();
-                
-                // Convert technical terms to user-friendly terms
-                let type = '';
-                if (run.type === 'scrape') {
-                    type = 'Finding Articles';
-                } else if (run.type === 'rewrite') {
-                    type = 'Rewriting Articles';
-                } else if (run.type === 'wordpress' || run.type === 'wordpress_draft') {
-                    type = 'Publishing Articles';
-                } else {
-                    // Capitalize first letter as fallback
-                    type = run.type.charAt(0).toUpperCase() + run.type.slice(1);
-                }
+                const type = run.type.charAt(0).toUpperCase() + run.type.slice(1);
                 
                 let results = '';
                 if (run.stats) {
@@ -188,14 +183,16 @@ function loadActivity() {
                     } else if (run.type === 'rewrite') {
                         results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_rewritten} rewritten`;
                     } else if (run.type === 'wordpress') {
-                        results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_posted} published`;
+                        results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_posted} posted`;
                     } else if (run.type === 'wordpress_draft') {
-                        results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_drafted} published`;
+                        results = `Processed ${run.stats.articles_processed} articles, ${run.stats.articles_drafted} drafted`;
                     }
                 }
                 
+                const animationDelay = index * 0.05;
+                
                 html += `
-                    <tr class="border-t border-gray-100 hover:bg-gray-50">
+                    <tr class="border-t border-gray-200 opacity-0" style="animation: fadeIn 0.5s ease-out forwards; animation-delay: ${animationDelay}s;">
                         <td class="p-4">${timestamp}</td>
                         <td class="p-4">${type}</td>
                         <td class="p-4">${results}</td>
@@ -217,6 +214,18 @@ function loadActivity() {
 
 // Load articles
 function loadArticles() {
+    articlesContainerEl.innerHTML = `
+        <div class="flex items-center justify-center h-40 col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-500">Loading articles...</span>
+            </div>
+        </div>
+    `;
+
     db.collection('articles')
         .orderBy('scraped_at', 'desc')
         .limit(12)
@@ -252,7 +261,7 @@ function renderArticles() {
     // Check if there are no articles
     if (filteredArticles.length === 0) {
         articlesContainerEl.innerHTML = `
-            <div class="col-span-1 md:col-span-3 text-center p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="col-span-3 flex items-center justify-center h-40 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                 <p class="text-gray-500">No articles found</p>
             </div>
         `;
@@ -266,71 +275,34 @@ function renderArticles() {
         const published = article.published || 'Unknown date';
         const author = article.author || 'Unknown author';
         
-        // Format date nicely if we have it
-        let formattedDate = published;
-        if (article.scraped_at) {
-            const date = new Date(article.scraped_at);
-            formattedDate = date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
-            });
-        }
-        
         let statusBadge = '';
-        let statusColor = 'primary';
-        let statusIcon = '';
         let viewButtonText = 'View Details';
         
         if (article.status === 'scraped') {
-            statusBadge = '<span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded-full">Found</span>';
-            statusIcon = `<svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>`;
+            statusBadge = '<span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded">Found</span>';
         } else if (article.status === 'rewritten') {
-            statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">Rewritten</span>';
-            statusColor = 'amber';
-            statusIcon = `<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-            </svg>`;
-            viewButtonText = 'View Content';
+            statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">Rewritten</span>';
+            viewButtonText = 'View & Copy';
         } else if (article.status === 'drafted') {
-            statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full">Published</span>';
-            statusColor = 'emerald';
-            statusIcon = `<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>`;
-            viewButtonText = 'View Content';
+            statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded">Published</span>';
+            viewButtonText = 'View & Copy';
         }
         
-        // Add animation delay based on index for staggered entrance
-        const delay = 0.05 * (index % 6); // 0.05s delay increment with max of 6 items
+        const animationDelay = index * 0.05;
         
         html += `
-            <div class="bg-white rounded-xl border border-${statusColor}-100 p-5 shadow-sm article-card hover:shadow animate-slide-up" 
-                 style="animation-delay: ${delay}s" data-id="${article.id}">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="flex items-center">
-                        ${statusIcon}
-                        <span class="ml-1">${statusBadge}</span>
-                    </div>
+            <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm article-card opacity-0" 
+                 style="animation: fadeIn 0.5s ease-out forwards, slideUp 0.5s ease-out forwards; animation-delay: ${animationDelay}s;" 
+                 data-id="${article.id}">
+                <div class="flex justify-between items-start mb-2">
+                    ${statusBadge}
                 </div>
-                <h3 class="font-medium text-gray-800 mb-2 line-clamp-2 text-lg">${title}</h3>
-                <div class="text-sm text-gray-500 mb-4 space-y-1">
-                    <div class="flex items-center">
-                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                        ${formattedDate}
-                    </div>
-                    <div class="flex items-center">
-                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                        ${author}
-                    </div>
+                <h3 class="font-semibold mb-2 line-clamp-2">${title}</h3>
+                <div class="text-sm text-gray-500 mb-4">
+                    <div>${published}</div>
+                    <div>${author}</div>
                 </div>
-                <button class="w-full py-2 px-4 bg-${statusColor}-50 hover:bg-${statusColor}-100 rounded-lg text-sm transition-colors text-${statusColor}-700 view-article-btn" data-id="${article.id}">
+                <button class="text-sm text-primary-600 hover:text-primary-700 hover:underline view-article-btn" data-id="${article.id}">
                     ${viewButtonText}
                 </button>
             </div>
@@ -340,20 +312,10 @@ function renderArticles() {
     articlesContainerEl.innerHTML = html;
     
     // Add event listeners to view article buttons
-    document.querySelectorAll('.view-article-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent the card click from also firing
-            openArticleModal(button.dataset.id);
-        });
-    });
-    
-    // Also add event listeners to the whole article card
-    document.querySelectorAll('.article-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            // Don't trigger if they clicked the button (which has its own handler)
-            if (!e.target.closest('.view-article-btn')) {
-                openArticleModal(card.dataset.id);
-            }
+    document.querySelectorAll('.view-article-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const articleId = btn.getAttribute('data-id');
+            openArticleModal(articleId);
         });
     });
 }
@@ -363,123 +325,61 @@ function openArticleModal(articleId) {
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
     
-    // Set modal title with status indicator
-    let statusBadge = '';
-    let statusColor = 'primary';
+    // Set modal title
+    modalTitleEl.textContent = article.title || 'Untitled Article';
     
-    if (article.status === 'scraped') {
-        statusBadge = '<span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded-full ml-2">Found</span>';
-    } else if (article.status === 'rewritten') {
-        statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full ml-2">Rewritten</span>';
-    } else if (article.status === 'drafted') {
-        statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full ml-2">Published</span>';
-    }
-    
-    modalTitleEl.innerHTML = `${article.title || 'Untitled Article'} ${statusBadge}`;
-    
-    // Format the date if we have it
-    let formattedDate = 'Unknown date';
-    if (article.scraped_at) {
-        const date = new Date(article.scraped_at);
-        formattedDate = date.toLocaleDateString('en-US', { 
-            weekday: 'long',
-            month: 'long', 
-            day: 'numeric', 
-            year: 'numeric' 
-        });
-    }
-    
-    // Set original content with styled header
+    // Set original content with loading state
     originalContentEl.innerHTML = `
-        <div class="mb-3 pb-2 border-b border-gray-200">
-            <div class="text-sm text-gray-500 mb-1">Original Source</div>
-            <div class="flex items-center justify-between">
-                <a href="${article.url || '#'}" target="_blank" class="text-primary-600 hover:underline text-sm flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                    </svg>
-                    Visit Source
-                </a>
-                <span class="text-xs text-gray-500">${formattedDate}</span>
-            </div>
-        </div>
-        <div class="prose prose-sm max-w-none">
-            <p>${article.body || 'No content available'}</p>
+        <div class="flex items-center justify-center p-4">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Loading content...</span>
         </div>
     `;
     
-    // Set rewritten content with copy button and formatting
-    if (article.rewritten_html) {
-        const copyButton = `
-            <button id="copy-rewritten-btn" class="px-3 py-1 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-4m-7-5l3-3m0 0l3 3m-3-3v12"></path>
-                </svg>
-                Copy Article
-            </button>
-        `;
-        
-        rewrittenContentEl.innerHTML = `
-            <div class="mb-3 pb-2 border-b border-gray-200 flex justify-between items-center">
-                <div class="text-sm text-gray-500">Rewritten Content</div>
-                ${copyButton}
-            </div>
-            <div id="rewritten-text" class="prose prose-sm max-w-none">
-                ${article.rewritten_html}
-            </div>
-        `;
-        
-        // Add event listener to the copy button
-        setTimeout(() => {
-            const copyBtn = document.getElementById('copy-rewritten-btn');
-            if (copyBtn) {
-                copyBtn.addEventListener('click', () => copyArticleContent());
-            }
-        }, 0);
-    } else {
-        rewrittenContentEl.innerHTML = `
-            <div class="flex items-center justify-center h-32 bg-gray-50">
-                <div class="text-center">
-                    <svg class="w-8 h-8 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <p class="mt-2 text-gray-500">Not yet rewritten</p>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Set URL
-    modalUrlEl.textContent = article.url || 'Not available';
-    modalUrlEl.href = article.url || '#';
-    
-    // Check if drafted to WordPress
-    if (article.wordpress_id) {
-        const wordpressUrl = getWordPressUrl(article.wordpress_id);
-        wordpressLinkEl.href = wordpressUrl;
-        wordpressLinkEl.classList.remove('hidden');
-        wordpressLinkEl.innerHTML = `
-            <svg class="w-4 h-4 mr-1 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+    // Set rewritten content with loading state
+    rewrittenContentEl.innerHTML = `
+        <div class="flex items-center justify-center p-4">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            View on Website
-        `;
-    } else {
-        wordpressLinkEl.classList.add('hidden');
-    }
+            <span>Loading content...</span>
+        </div>
+    `;
     
-    // Show modal with animation
+    // Show modal first for better UX
     articleModalEl.classList.remove('hidden');
     
-    // Add escape key listener for closing
-    document.addEventListener('keydown', handleEscapeKey);
-}
-
-// Handle escape key press to close modal
-function handleEscapeKey(e) {
-    if (e.key === 'Escape') {
-        closeArticleModal();
-    }
+    // Set original content with a small delay
+    setTimeout(() => {
+        originalContentEl.innerHTML = `<p>${article.body || 'No content available'}</p>`;
+        
+        // Set date and URL
+        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${article.published || 'Unknown date'}</span>`;
+        modalUrlEl.textContent = article.url || 'Source URL';
+        modalUrlEl.href = article.url || '#';
+        document.getElementById('view-original-btn').href = article.url || '#';
+        
+        // Set rewritten content with copy button
+        if (article.rewritten_html) {
+            rewrittenContentEl.innerHTML = `<div id="rewritten-text" class="animate-in">${article.rewritten_html}</div>`;
+        } else {
+            rewrittenContentEl.innerHTML = '<p class="text-center py-8 text-gray-500">Not yet rewritten</p>';
+        }
+        
+        // Check if drafted to WordPress
+        if (article.wordpress_id) {
+            const wordpressUrl = getWordPressUrl(article.wordpress_id);
+            wordpressLinkEl.href = wordpressUrl;
+            wordpressLinkEl.classList.remove('hidden');
+            wordpressLinkEl.classList.add('animate-in');
+        } else {
+            wordpressLinkEl.classList.add('hidden');
+        }
+    }, 300);
 }
 
 // Function to copy the rewritten article content
@@ -511,17 +411,6 @@ function copyArticleContent() {
 function copyTextFallback(text) {
     try {
         const textArea = document.getElementById('hidden-textarea');
-        if (!textArea) {
-            // Create the textarea if it doesn't exist
-            const newTextArea = document.createElement('textarea');
-            newTextArea.id = 'hidden-textarea';
-            newTextArea.style.position = 'absolute';
-            newTextArea.style.left = '-9999px';
-            newTextArea.setAttribute('aria-hidden', 'true');
-            document.body.appendChild(newTextArea);
-            textArea = newTextArea;
-        }
-        
         textArea.value = text;
         textArea.focus();
         textArea.select();
@@ -548,18 +437,31 @@ function getWordPressUrl(postId) {
 // Close article modal
 function closeArticleModal() {
     articleModalEl.classList.add('hidden');
-    // Remove escape key listener
-    document.removeEventListener('keydown', handleEscapeKey);
 }
 
 // Setup event listeners
 function setupEventListeners() {
     // Refresh button
     refreshBtnEl.addEventListener('click', () => {
+        // Show loading state
+        refreshBtnEl.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Refreshing...
+        `;
+        
+        // Update data
         updateLastUpdated();
         loadStats();
         loadActivity();
         loadArticles();
+        
+        // Reset button text after a delay
+        setTimeout(() => {
+            refreshBtnEl.innerHTML = 'Refresh';
+        }, 2000);
     });
     
     // Filter status
@@ -568,14 +470,15 @@ function setupEventListeners() {
         renderArticles();
     });
     
-    // Run manually button
-    runManuallyBtnEl.addEventListener('click', () => {
-        // This would trigger a GitHub Action workflow dispatch in a real implementation
-        alert('This would trigger a manual run on the server. Not implemented in this demo.');
-    });
-    
     // Close modal button
     closeModalEl.addEventListener('click', closeArticleModal);
+    
+    // Add event listener for the copy button in modal
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'copy-rewritten-btn') {
+            copyArticleContent();
+        }
+    });
     
     // Close modal when clicking outside
     articleModalEl.addEventListener('click', (e) => {
@@ -583,74 +486,72 @@ function setupEventListeners() {
             closeArticleModal();
         }
     });
+    
+    // Handle ESC key to close modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !articleModalEl.classList.contains('hidden')) {
+            closeArticleModal();
+        }
+    });
 }
-
-// Initialize the dashboard when the page loads
-document.addEventListener('DOMContentLoaded', initDashboard);
 
 // Extract showCopyFeedback as a standalone function for reuse
 function showCopyFeedback(success = true) {
     const copyBtn = document.getElementById('copy-rewritten-btn');
     if (copyBtn) {
-        const originalText = copyBtn.innerHTML;
-        const originalClasses = copyBtn.className;
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = success ? 'Copied!' : 'Failed to copy';
+        copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        copyBtn.classList.add(success ? 'bg-green-600' : 'bg-red-600', 
+                             success ? 'hover:bg-green-700' : 'hover:bg-red-700');
         
-        // Change button appearance
-        copyBtn.innerHTML = success ? 
-            `<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg> Copied!` : 
-            `<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg> Failed to copy`;
-        
-        copyBtn.className = success ? 
-            'px-3 py-1 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center' : 
-            'px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center';
-        
-        // Add pulse animation
-        copyBtn.classList.add('animate-pulse');
-        
-        // Also show a temporary toast notification
-        showToast(success ? 'Content copied to clipboard' : 'Failed to copy content', success);
-        
-        // Reset button after delay
         setTimeout(() => {
-            copyBtn.innerHTML = originalText;
-            copyBtn.className = originalClasses;
+            copyBtn.textContent = originalText;
+            copyBtn.classList.remove(success ? 'bg-green-600' : 'bg-red-600', 
+                                   success ? 'hover:bg-green-700' : 'hover:bg-red-700');
+            copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
         }, 2000);
     }
 }
 
-// Create a toast notification
-function showToast(message, success = true) {
-    // Remove any existing toast
-    const existingToast = document.getElementById('toast-notification');
-    if (existingToast) {
-        existingToast.remove();
+// Toast notification system
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'fixed bottom-4 right-4 z-50 flex flex-col space-y-2';
+        document.body.appendChild(toastContainer);
     }
     
     // Create toast element
     const toast = document.createElement('div');
-    toast.id = 'toast-notification';
-    toast.className = `fixed bottom-4 right-4 ${success ? 'bg-emerald-500' : 'bg-red-500'} text-white px-4 py-2 rounded-lg shadow-lg flex items-center animate-in`;
-    toast.style.zIndex = '9999';
-    toast.style.animation = 'fadeIn 0.3s, fadeOut 0.3s 1.7s';
-    toast.innerHTML = `
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${success ? 'M5 13l4 4L19 7' : 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}"></path>
-        </svg>
-        ${message}
-    `;
+    toast.className = 'animate-in px-4 py-3 rounded-lg shadow-lg max-w-xs';
     
-    // Add toast to DOM
-    document.body.appendChild(toast);
+    // Set background color based on type
+    if (type === 'success') {
+        toast.classList.add('bg-green-600', 'text-white');
+    } else if (type === 'error') {
+        toast.classList.add('bg-red-600', 'text-white');
+    } else {
+        toast.classList.add('bg-primary-600', 'text-white');
+    }
     
-    // Remove toast after a delay
+    // Add message
+    toast.textContent = message;
+    
+    // Add to container
+    toastContainer.appendChild(toast);
+    
+    // Remove after 3 seconds
     setTimeout(() => {
-        toast.style.opacity = '0';
+        toast.classList.add('fade-out');
         setTimeout(() => {
             toast.remove();
         }, 300);
-    }, 2000);
-} 
+    }, 3000);
+}
+
+// Initialize the dashboard when the page loads
+document.addEventListener('DOMContentLoaded', initDashboard); 

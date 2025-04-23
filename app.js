@@ -425,7 +425,10 @@ function openArticleModal(articleId) {
     console.log('Opening article modal for ID:', articleId);
     const article = articles.find(a => a.id === articleId);
     console.log('Found article:', article ? 'Yes' : 'No', article ? `Title: ${article.title}` : '');
-    if (!article) return;
+    if (!article) {
+        showToast('Article not found', 'error');
+        return;
+    }
     
     // Set modal title
     modalTitleEl.textContent = article.title || 'Untitled Article';
@@ -489,23 +492,8 @@ function openArticleModal(articleId) {
         rewrittenContentEl.innerHTML = '<p class="text-center py-8 text-gray-500">Not yet rewritten</p>';
     }
     
-    // Add copy button with blue styling in all cases
-    const copyButtonDiv = document.createElement('div');
-    copyButtonDiv.className = 'flex justify-end space-x-3 mt-4';
-    copyButtonDiv.innerHTML = `
-        <button id="copy-article-btn" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-            Copy Article
-        </button>
-    `;
-    rewrittenContentEl.appendChild(copyButtonDiv);
-    
-    // Add event listener to copy button
-    setTimeout(() => {
-        const copyBtn = document.getElementById('copy-article-btn');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', copyArticleContent);
-        }
-    }, 0);
+    // We don't need to add the button since it's now outside the rewrittenContent div
+    // This ensures the button stays even if the content is loading
     
     // Check if drafted to WordPress
     if (article.wordpress_id) {
@@ -716,7 +704,7 @@ function copyArticleContent() {
     // If rewritten content doesn't exist yet, show a message
     if (!rewrittenText) {
         console.log('No rewritten text found');
-        showToast('No content available to copy', 'error');
+        showToast('Content is still loading or not available', 'error');
         return;
     }
     
@@ -736,6 +724,7 @@ function copyArticleContent() {
     // Try to use clipboard API first
     if (navigator.clipboard) {
         navigator.clipboard.writeText(textToCopy).then(() => {
+            showToast('Article copied to clipboard!', 'success');
             showCopyFeedback(true);
         }).catch(err => {
             console.error('Error copying text with Clipboard API: ', err);
@@ -854,12 +843,18 @@ function showCopyFeedback(success = true) {
     if (copyBtn) {
         const originalText = copyBtn.textContent;
         copyBtn.textContent = success ? 'Copied!' : 'Failed to copy';
+        
+        // Temporarily disable the button to prevent multiple clicks
+        copyBtn.disabled = true;
+        
+        // Visual feedback by changing button style
         copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
         copyBtn.classList.add(success ? 'bg-green-600' : 'bg-red-600', 
                              success ? 'hover:bg-green-700' : 'hover:bg-red-700');
         
         setTimeout(() => {
             copyBtn.textContent = originalText;
+            copyBtn.disabled = false;
             copyBtn.classList.remove(success ? 'bg-green-600' : 'bg-red-600', 
                                    success ? 'hover:bg-green-700' : 'hover:bg-red-700');
             copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
@@ -880,19 +875,36 @@ function showToast(message, type = 'info') {
     
     // Create toast element
     const toast = document.createElement('div');
-    toast.className = 'animate-in px-4 py-3 rounded-lg shadow-lg max-w-xs';
+    toast.className = 'animate-in px-4 py-3 rounded-lg shadow-lg max-w-xs flex items-center';
     
     // Set background color based on type
     if (type === 'success') {
         toast.classList.add('bg-green-600', 'text-white');
+        toast.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+        `;
     } else if (type === 'error') {
         toast.classList.add('bg-red-600', 'text-white');
+        toast.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        `;
     } else {
         toast.classList.add('bg-primary-600', 'text-white');
+        toast.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        `;
     }
     
     // Add message
-    toast.textContent = message;
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message;
+    toast.appendChild(messageSpan);
     
     // Add to container
     toastContainer.appendChild(toast);

@@ -32,7 +32,6 @@ const refreshBtnEl = document.getElementById('refresh-btn');
 const runWorkflowBtnEl = document.getElementById('run-workflow-btn');
 const articleModalEl = document.getElementById('article-modal');
 const modalTitleEl = document.getElementById('modal-title');
-const originalContentEl = document.getElementById('original-content');
 const rewrittenContentEl = document.getElementById('rewritten-content');
 const modalUrlEl = document.getElementById('modal-url');
 const wordpressLinkEl = document.getElementById('wordpress-link');
@@ -423,7 +422,9 @@ function renderArticles() {
 
 // Function to open the article modal
 function openArticleModal(articleId) {
+    console.log('Opening article modal for ID:', articleId);
     const article = articles.find(a => a.id === articleId);
+    console.log('Found article:', article ? 'Yes' : 'No', article ? `Title: ${article.title}` : '');
     if (!article) return;
     
     // Set modal title
@@ -432,12 +433,18 @@ function openArticleModal(articleId) {
     // Show modal first for better UX
     articleModalEl.classList.remove('hidden');
     
+    // Log article content for debugging
+    console.log('Article has rewritten_html:', article.rewritten_html ? 'Yes' : 'No');
+    console.log('Article has body:', article.body ? 'Yes' : 'No');
+    console.log('Article status:', article.status);
+    
     // Set date and URL
     let formattedDate = 'Unknown date';
     if (article.published) {
         try {
             // Handle the timezone issue to ensure correct date is displayed
             const dateString = article.published;
+            console.log('Published date string:', dateString);
             
             // If the date is supposed to be April 23rd for all articles
             if (dateString.includes('2025-04-22') || dateString.includes('04/22/2025')) {
@@ -481,6 +488,24 @@ function openArticleModal(articleId) {
     } else {
         rewrittenContentEl.innerHTML = '<p class="text-center py-8 text-gray-500">Not yet rewritten</p>';
     }
+    
+    // Add copy button with blue styling in all cases
+    const copyButtonDiv = document.createElement('div');
+    copyButtonDiv.className = 'flex justify-end space-x-3 mt-4';
+    copyButtonDiv.innerHTML = `
+        <button id="copy-article-btn" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+            Copy Article
+        </button>
+    `;
+    rewrittenContentEl.appendChild(copyButtonDiv);
+    
+    // Add event listener to copy button
+    setTimeout(() => {
+        const copyBtn = document.getElementById('copy-article-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', copyArticleContent);
+        }
+    }, 0);
     
     // Check if drafted to WordPress
     if (article.wordpress_id) {
@@ -685,13 +710,28 @@ function triggerGitHubWorkflow() {
 
 // Function to copy the rewritten article content
 function copyArticleContent() {
+    console.log('Copy article button clicked');
     const rewrittenText = document.getElementById('rewritten-text');
-    if (!rewrittenText) return;
+    
+    // If rewritten content doesn't exist yet, show a message
+    if (!rewrittenText) {
+        console.log('No rewritten text found');
+        showToast('No content available to copy', 'error');
+        return;
+    }
     
     // Get the text content (strip HTML)
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = rewrittenText.innerHTML;
     const textToCopy = tempDiv.textContent || tempDiv.innerText || '';
+    
+    if (!textToCopy.trim()) {
+        console.log('Rewritten text is empty');
+        showToast('No content available to copy', 'error');
+        return;
+    }
+    
+    console.log('Copying text length:', textToCopy.length);
     
     // Try to use clipboard API first
     if (navigator.clipboard) {
@@ -784,9 +824,11 @@ function setupEventListeners() {
     // Close modal button
     closeModalEl.addEventListener('click', closeArticleModal);
     
-    // Add event listener for the copy button in modal
+    // Add event listener for the copy button in modal using event delegation
     document.addEventListener('click', function(e) {
-        if (e.target && e.target.id === 'copy-article-btn') {
+        // Check if the clicked element has the ID 'copy-article-btn' or is a child of it
+        if (e.target && (e.target.id === 'copy-article-btn' || e.target.closest('#copy-article-btn'))) {
+            console.log("Copy button clicked via event delegation");
             copyArticleContent();
         }
     });

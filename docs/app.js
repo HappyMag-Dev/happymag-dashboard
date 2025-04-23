@@ -53,9 +53,13 @@ let articles = [];
 
 // Initialize the dashboard
 function initDashboard() {
+    console.log("Initializing dashboard...");
+    
     // Set current date
-    const now = new Date();
-    currentDateEl.textContent = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    if (currentDateEl) {
+        const now = new Date();
+        currentDateEl.textContent = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
     
     // Update timestamps
     updateLastUpdated();
@@ -71,12 +75,16 @@ function initDashboard() {
 
 // Update the last updated timestamp
 function updateLastUpdated() {
-    const now = new Date();
-    lastUpdatedEl.textContent = `Last updated: ${now.toLocaleString()}`;
+    if (lastUpdatedEl) {
+        const now = new Date();
+        lastUpdatedEl.textContent = `Last updated: ${now.toLocaleString()}`;
+    }
 }
 
 // Animate count updates
 function animateCountUp(element, targetValue) {
+    if (!element) return;
+    
     const startValue = parseInt(element.textContent) || 0;
     const duration = 1000; // 1 second animation
     const startTime = performance.now();
@@ -100,14 +108,16 @@ function animateCountUp(element, targetValue) {
 // Update progress bars
 function updateProgressBars(rewritten, total, drafted) {
     const rewrittenProgress = document.getElementById('rewritten-progress');
-    const postedProgress = document.getElementById('posted-progress');
-    
-    // Calculate percentages
-    const rewrittenPercentage = total > 0 ? (rewritten / total) * 100 : 0;
     
     // Set width with delay for animation
     setTimeout(() => {
-        rewrittenProgress.style.width = `${rewrittenPercentage}%`;
+        if (rewrittenProgress) {
+            // Calculate percentages
+            const rewrittenPercentage = total > 0 ? (rewritten / total) * 100 : 0;
+            rewrittenProgress.style.width = `${rewrittenPercentage}%`;
+        }
+        
+        const postedProgress = document.getElementById('posted-progress');
         if (postedProgress) { // Check if element exists
             const postedPercentage = total > 0 ? (drafted / total) * 100 : 0;
             postedProgress.style.width = `${postedPercentage}%`;
@@ -117,6 +127,11 @@ function updateProgressBars(rewritten, total, drafted) {
 
 // Load statistics
 function loadStats() {
+    if (!scrapedCountEl && !rewrittenCountEl && !scrapedTodayEl && !rewrittenTodayEl && !postedTodayEl) {
+        console.log("Skipping loadStats as stats elements are not found");
+        return;
+    }
+    
     // Get article counts
     db.collection('articles').get().then(snapshot => {
         const allArticles = snapshot.docs.map(doc => doc.data());
@@ -127,8 +142,8 @@ function loadStats() {
         const drafted = allArticles.filter(article => article.status === 'drafted').length;
         
         // Animate count updates
-        animateCountUp(scrapedCountEl, scraped);
-        animateCountUp(rewrittenCountEl, rewritten);
+        if (scrapedCountEl) animateCountUp(scrapedCountEl, scraped);
+        if (rewrittenCountEl) animateCountUp(rewrittenCountEl, rewritten);
         if (postedCountEl) {
             animateCountUp(postedCountEl, drafted);
         }
@@ -158,9 +173,9 @@ function loadStats() {
             return draftedDate >= today;
         }).length;
         
-        scrapedTodayEl.textContent = scrapedToday;
-        rewrittenTodayEl.textContent = rewrittenToday;
-        postedTodayEl.textContent = draftedToday;
+        if (scrapedTodayEl) scrapedTodayEl.textContent = scrapedToday;
+        if (rewrittenTodayEl) rewrittenTodayEl.textContent = rewrittenToday;
+        if (postedTodayEl) postedTodayEl.textContent = draftedToday;
     }).catch(error => {
         console.error("Error loading stats:", error);
     });
@@ -168,6 +183,11 @@ function loadStats() {
 
 // Load recent activity
 function loadActivity() {
+    if (!activityTableBodyEl) {
+        console.log("Skipping loadActivity as activity table body element not found");
+        return;
+    }
+
     db.collection('runs')
         .orderBy('timestamp', 'desc')
         .limit(10)
@@ -226,6 +246,11 @@ function loadActivity() {
 
 // Load articles
 function loadArticles() {
+    if (!articlesContainerEl) {
+        console.log("Skipping loadArticles as articles container not found");
+        return;
+    }
+
     articlesContainerEl.innerHTML = `
         <div class="flex items-center justify-center h-40 col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <div class="flex items-center">
@@ -237,6 +262,9 @@ function loadArticles() {
             </div>
         </div>
     `;
+
+    // Clear the existing articles array before loading from Firestore
+    articles = [];
 
     db.collection('articles')
         .orderBy('scraped_at', 'desc')
@@ -251,6 +279,7 @@ function loadArticles() {
             });
             
             renderArticles();
+            console.log("Articles loaded:", articles.length);
         })
         .catch(error => {
             console.error("Error loading articles:", error);
@@ -264,6 +293,11 @@ function loadArticles() {
 
 // Render articles based on filter
 function renderArticles() {
+    if (!articlesContainerEl) {
+        console.log("Cannot render articles: articlesContainerEl not found");
+        return;
+    }
+    
     // Filter articles
     let filteredArticles = articles;
     if (currentFilter !== 'all') {
@@ -399,6 +433,54 @@ function openArticleModal(articleId) {
     
     if (!article) {
         console.error("Article not found with ID:", articleId);
+        
+        // Check if the modal elements exist
+        if (!articleModalEl) {
+            console.error("articleModalEl not found");
+            return;
+        }
+        
+        if (!modalTitleEl) {
+            console.error("modalTitleEl not found");
+            return;
+        }
+        
+        if (!rewrittenContentEl) {
+            console.error("rewrittenContentEl not found");
+            return;
+        }
+        
+        // Show modal with error message
+        modalTitleEl.textContent = 'Article Not Found';
+        
+        // Show modal first for better UX
+        articleModalEl.classList.remove('hidden');
+        
+        // Show error message with refresh option
+        rewrittenContentEl.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-8 text-center">
+                <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-gray-600 mb-4">This article appears to have been deleted from the database.</p>
+                <button id="refresh-articles-btn" class="action-button bg-primary-600 text-white hover:bg-primary-700">
+                    Refresh Articles
+                </button>
+            </div>
+        `;
+        
+        // Add event listener to the refresh button
+        setTimeout(() => {
+            const refreshArticlesBtn = document.getElementById('refresh-articles-btn');
+            if (refreshArticlesBtn) {
+                refreshArticlesBtn.addEventListener('click', () => {
+                    closeArticleModal();
+                    loadArticles(); // Reload articles
+                    showToast('Articles refreshed', 'info');
+                });
+            }
+        }, 0);
+        
         return;
     }
     
@@ -647,32 +729,34 @@ function closeArticleModal() {
 // Setup event listeners
 function setupEventListeners() {
     // Refresh button
-    refreshBtnEl.addEventListener('click', () => {
-        // Show loading state
-        refreshBtnEl.innerHTML = `
-            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Refreshing...
-        `;
-        
-        // Update data
-        updateLastUpdated();
-        loadStats();
-        loadActivity();
-        loadArticles();
-        
-        // Reset button text after a delay
-        setTimeout(() => {
+    if (refreshBtnEl) {
+        refreshBtnEl.addEventListener('click', () => {
+            // Show loading state
             refreshBtnEl.innerHTML = `
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Refresh
+                Refreshing...
             `;
-        }, 2000);
-    });
+            
+            // Update data
+            updateLastUpdated();
+            loadStats();
+            loadActivity();
+            loadArticles();
+            
+            // Reset button text after a delay
+            setTimeout(() => {
+                refreshBtnEl.innerHTML = `
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Refresh
+                `;
+            }, 2000);
+        });
+    }
     
     // Run Workflow Button
     if (runWorkflowBtnEl) {
@@ -680,58 +764,68 @@ function setupEventListeners() {
     }
     
     // Filter status
-    filterStatusEl.addEventListener('change', () => {
-        currentFilter = filterStatusEl.value;
-        renderArticles();
-    });
+    if (filterStatusEl) {
+        filterStatusEl.addEventListener('change', () => {
+            currentFilter = filterStatusEl.value;
+            renderArticles();
+        });
+    }
     
     // Close modal button
-    closeModalEl.addEventListener('click', closeArticleModal);
+    if (closeModalEl) {
+        closeModalEl.addEventListener('click', closeArticleModal);
+    }
     
     // Add event listeners to article container using delegation for modal opening
-    articlesContainerEl.addEventListener('click', function(e) {
-        // Check if the click was on a button or its child elements
-        let target = e.target;
-        let articleButton = null;
-        
-        console.log("Click detected in articles container", e.target);
-        
-        // Traverse up to find the button if clicked on a child element
-        while (target && target !== this) {
-            if (target.classList.contains('view-article-btn')) {
-                articleButton = target;
-                console.log("Found view-article-btn:", target);
-                break;
+    if (articlesContainerEl) {
+        articlesContainerEl.addEventListener('click', function(e) {
+            // Check if the click was on a button or its child elements
+            let target = e.target;
+            let articleButton = null;
+            
+            console.log("Click detected in articles container", e.target);
+            
+            // Traverse up to find the button if clicked on a child element
+            while (target && target !== this) {
+                if (target.classList.contains('view-article-btn')) {
+                    articleButton = target;
+                    console.log("Found view-article-btn:", target);
+                    break;
+                }
+                target = target.parentElement;
             }
-            target = target.parentElement;
-        }
-        
-        // If we found a button, get its data-id and open the modal
-        if (articleButton) {
-            const articleId = articleButton.getAttribute('data-id');
-            console.log("Article ID:", articleId);
-            if (articleId) {
-                e.preventDefault();
-                e.stopPropagation();
-                openArticleModal(articleId);
-                return false;
+            
+            // If we found a button, get its data-id and open the modal
+            if (articleButton) {
+                const articleId = articleButton.getAttribute('data-id');
+                console.log("Article ID:", articleId);
+                if (articleId) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openArticleModal(articleId);
+                    return false;
+                }
             }
-        }
-    });
+        });
+    }
     
     // Close modal when clicking outside
-    articleModalEl.addEventListener('click', (e) => {
-        if (e.target === articleModalEl) {
-            closeArticleModal();
-        }
-    });
+    if (articleModalEl) {
+        articleModalEl.addEventListener('click', (e) => {
+            if (e.target === articleModalEl) {
+                closeArticleModal();
+            }
+        });
+    }
     
     // Handle ESC key to close modal
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !articleModalEl.classList.contains('hidden')) {
-            closeArticleModal();
-        }
-    });
+    if (document) {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !articleModalEl.classList.contains('hidden')) {
+                closeArticleModal();
+            }
+        });
+    }
 }
 
 // Extract showCopyFeedback as a standalone function for reuse

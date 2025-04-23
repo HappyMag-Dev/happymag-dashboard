@@ -189,10 +189,15 @@ function loadStats() {
         today.setHours(0, 0, 0, 0);
         
         const scrapedToday = allArticles.filter(article => {
-            if (!article.scraped_at) return false;
-            const scrapedDate = new Date(article.scraped_at);
-            return scrapedDate >= today;
+            if (!article.rewritten_at) return false;
+            const rewrittenDate = new Date(article.rewritten_at);
+            return rewrittenDate >= today;
         }).length;
+        // const scrapedToday = allArticles.filter(article => {
+        //     if (!article.scraped_at) return false;
+        //     const scrapedDate = new Date(article.scraped_at);
+        //     return scrapedDate >= today;
+        // }).length;
         
         const rewrittenToday = allArticles.filter(article => {
             if (!article.rewritten_at) return false;
@@ -376,14 +381,14 @@ function renderArticles() {
         let buttonColorClass = 'bg-primary-600 hover:bg-primary-700'; // Default blue
         
         if (article.status === 'scraped') {
-            statusBadge = '<span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded">Found</span>';
+            statusBadge = '<span class="bg-primary-100 text-primary-800 text-xs px-4 py-2 rounded">Found</span>';
             buttonColorClass = 'bg-primary-600 hover:bg-primary-700'; // Blue for found/scraped
         } else if (article.status === 'rewritten') {
-            statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">Rewritten</span>';
+            statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-4 py-2 rounded">Rewritten</span>';
             viewButtonText = 'View & Copy';
             buttonColorClass = 'bg-amber-600 hover:bg-amber-700'; // Amber for rewritten
         } else if (article.status === 'drafted') {
-            statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded">Published</span>';
+            statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-4 py-2 rounded">Published</span>';
             viewButtonText = 'View & Copy';
             buttonColorClass = 'bg-emerald-600 hover:bg-emerald-700'; // Green for published/drafted
         }

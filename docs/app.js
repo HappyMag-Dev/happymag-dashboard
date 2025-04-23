@@ -391,8 +391,32 @@ function formatAustralianDate(dateString) {
 
 // Open article modal
 function openArticleModal(articleId) {
+    console.log("Opening modal for article ID:", articleId);
+    console.log("Articles array length:", articles ? articles.length : 0);
+    
     const article = articles.find(a => a.id === articleId);
-    if (!article) return;
+    console.log("Found article:", article ? "Yes" : "No");
+    
+    if (!article) {
+        console.error("Article not found with ID:", articleId);
+        return;
+    }
+    
+    // Check if modal elements exist
+    if (!articleModalEl) {
+        console.error("articleModalEl not found");
+        return;
+    }
+    
+    if (!modalTitleEl) {
+        console.error("modalTitleEl not found");
+        return;
+    }
+    
+    if (!rewrittenContentEl) {
+        console.error("rewrittenContentEl not found");
+        return;
+    }
     
     // Set modal title
     modalTitleEl.textContent = article.title || 'Untitled Article';
@@ -409,6 +433,7 @@ function openArticleModal(articleId) {
     `;
     
     // Show modal first for better UX
+    console.log("Removing 'hidden' class from modal");
     articleModalEl.classList.remove('hidden');
     
     // Set content with a small delay
@@ -663,18 +688,33 @@ function setupEventListeners() {
     // Close modal button
     closeModalEl.addEventListener('click', closeArticleModal);
     
-    // Add event listener for the copy button in modal using event delegation
-    document.addEventListener('click', function(e) {
-        // Handle copy button in modal
-        if (e.target && e.target.id === 'copy-rewritten-btn') {
-            copyArticleContent();
+    // Add event listeners to article container using delegation for modal opening
+    articlesContainerEl.addEventListener('click', function(e) {
+        // Check if the click was on a button or its child elements
+        let target = e.target;
+        let articleButton = null;
+        
+        console.log("Click detected in articles container", e.target);
+        
+        // Traverse up to find the button if clicked on a child element
+        while (target && target !== this) {
+            if (target.classList.contains('view-article-btn')) {
+                articleButton = target;
+                console.log("Found view-article-btn:", target);
+                break;
+            }
+            target = target.parentElement;
         }
         
-        // Handle View & Copy buttons on article cards
-        if (e.target && e.target.classList.contains('view-article-btn')) {
-            const articleId = e.target.getAttribute('data-id');
+        // If we found a button, get its data-id and open the modal
+        if (articleButton) {
+            const articleId = articleButton.getAttribute('data-id');
+            console.log("Article ID:", articleId);
             if (articleId) {
+                e.preventDefault();
+                e.stopPropagation();
                 openArticleModal(articleId);
+                return false;
             }
         }
     });

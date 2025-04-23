@@ -238,6 +238,9 @@ function loadArticles() {
         </div>
     `;
 
+    // Clear the existing articles array before loading from Firestore
+    articles = [];
+
     db.collection('articles')
         .orderBy('scraped_at', 'desc')
         .limit(12)
@@ -251,6 +254,7 @@ function loadArticles() {
             });
             
             renderArticles();
+            console.log("Articles loaded:", articles.length);
         })
         .catch(error => {
             console.error("Error loading articles:", error);
@@ -399,6 +403,54 @@ function openArticleModal(articleId) {
     
     if (!article) {
         console.error("Article not found with ID:", articleId);
+        
+        // Check if the modal elements exist
+        if (!articleModalEl) {
+            console.error("articleModalEl not found");
+            return;
+        }
+        
+        if (!modalTitleEl) {
+            console.error("modalTitleEl not found");
+            return;
+        }
+        
+        if (!rewrittenContentEl) {
+            console.error("rewrittenContentEl not found");
+            return;
+        }
+        
+        // Show modal with error message
+        modalTitleEl.textContent = 'Article Not Found';
+        
+        // Show modal first for better UX
+        articleModalEl.classList.remove('hidden');
+        
+        // Show error message with refresh option
+        rewrittenContentEl.innerHTML = `
+            <div class="flex flex-col items-center justify-center p-8 text-center">
+                <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-gray-600 mb-4">This article appears to have been deleted from the database.</p>
+                <button id="refresh-articles-btn" class="action-button bg-primary-600 text-white hover:bg-primary-700">
+                    Refresh Articles
+                </button>
+            </div>
+        `;
+        
+        // Add event listener to the refresh button
+        setTimeout(() => {
+            const refreshArticlesBtn = document.getElementById('refresh-articles-btn');
+            if (refreshArticlesBtn) {
+                refreshArticlesBtn.addEventListener('click', () => {
+                    closeArticleModal();
+                    loadArticles(); // Reload articles
+                    showToast('Articles refreshed', 'info');
+                });
+            }
+        }, 0);
+        
         return;
     }
     

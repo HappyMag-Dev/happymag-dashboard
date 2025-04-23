@@ -421,7 +421,7 @@ function renderArticles() {
     });
 }
 
-// Open article modal
+// Function to open the article modal
 function openArticleModal(articleId) {
     const article = articles.find(a => a.id === articleId);
     if (!article) return;
@@ -429,112 +429,100 @@ function openArticleModal(articleId) {
     // Set modal title
     modalTitleEl.textContent = article.title || 'Untitled Article';
     
-    // Set original content with loading state
-    originalContentEl.innerHTML = `
-        <div class="flex items-center justify-center p-4">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Loading content...</span>
-        </div>
-    `;
-    
-    // Set rewritten content with loading state
-    rewrittenContentEl.innerHTML = `
-        <div class="flex items-center justify-center p-4">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Loading content...</span>
-        </div>
-    `;
-    
     // Show modal first for better UX
     articleModalEl.classList.remove('hidden');
     
-    // Set original content with a small delay
-    setTimeout(() => {
-        originalContentEl.innerHTML = `<p>${article.body || 'No content available'}</p>`;
-        
-        // Format the date properly
-        let formattedDate = 'Unknown date';
-        if (article.published) {
-            try {
-                // Handle the timezone issue to ensure correct date is displayed
-                const dateString = article.published;
-                
-                // If the date is supposed to be April 23rd for all articles
-                if (dateString.includes('2025-04-22') || dateString.includes('04/22/2025')) {
-                    formattedDate = '23/04/2025'; // Directly use the correct date
+    // Set date and URL
+    let formattedDate = 'Unknown date';
+    if (article.published) {
+        try {
+            // Handle the timezone issue to ensure correct date is displayed
+            const dateString = article.published;
+            
+            // If the date is supposed to be April 23rd for all articles
+            if (dateString.includes('2025-04-22') || dateString.includes('04/22/2025')) {
+                formattedDate = '23/04/2025'; // Directly use the correct date
+            } else {
+                // For other dates, parse normally but handle timezone issues
+                const date = new Date(article.published);
+                if (!isNaN(date.getTime())) {
+                    // Add a day to fix the timezone issue if needed
+                    const fixedDate = new Date(date);
+                    // Uncomment the next line if all dates need to be shifted by one day
+                    // fixedDate.setDate(fixedDate.getDate() + 1);
+                    
+                    // Use Australian date format (DD/MM/YYYY)
+                    formattedDate = fixedDate.toLocaleDateString('en-AU', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    });
                 } else {
-                    // For other dates, parse normally but handle timezone issues
-                    const date = new Date(article.published);
-                    if (!isNaN(date.getTime())) {
-                        // Add a day to fix the timezone issue if needed
-                        const fixedDate = new Date(date);
-                        // Uncomment the next line if all dates need to be shifted by one day
-                        // fixedDate.setDate(fixedDate.getDate() + 1);
-                        
-                        // Use Australian date format (DD/MM/YYYY)
-                        formattedDate = fixedDate.toLocaleDateString('en-AU', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                        });
-                    } else {
-                        // If date parsing fails, use the original string
-                        formattedDate = article.published;
-                    }
+                    // If date parsing fails, use the original string
+                    formattedDate = article.published;
                 }
-            } catch (e) {
-                console.error('Error formatting date:', e);
-                formattedDate = article.published; // Use the original string as fallback
             }
+        } catch (e) {
+            console.error('Error formatting date:', e);
+            formattedDate = article.published; // Use the original string as fallback
         }
+    }
+    
+    document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${formattedDate}</span>`;
+    modalUrlEl.textContent = article.url || 'Source URL';
+    modalUrlEl.href = article.url || '#';
+    document.getElementById('view-original-btn').href = article.url || '#';
+    
+    // Set rewritten content with formatting for WordPress
+    if (article.rewritten_html) {
+        // Process the content to format with one sentence per line
+        let formattedContent = formatForWordPress(article.rewritten_html);
+        rewrittenContentEl.innerHTML = `<div id="rewritten-text" class="animate-in">${formattedContent}</div>`;
+    } else {
+        rewrittenContentEl.innerHTML = '<p class="text-center py-8 text-gray-500">Not yet rewritten</p>';
+    }
+    
+    // Check if drafted to WordPress
+    if (article.wordpress_id) {
+        const wordpressUrl = getWordPressUrl(article.wordpress_id);
+        wordpressLinkEl.href = wordpressUrl;
+        wordpressLinkEl.classList.remove('hidden');
+        wordpressLinkEl.classList.add('animate-in');
+    } else {
+        wordpressLinkEl.classList.add('hidden');
+    }
+}
+
+// Function to format content for WordPress with one sentence per line
+function formatForWordPress(htmlContent) {
+    // Create a temporary div to parse the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Get all text nodes
+    const paragraphs = tempDiv.querySelectorAll('p');
+    
+    // Process each paragraph
+    paragraphs.forEach(paragraph => {
+        const text = paragraph.textContent;
         
-        // Set date and URL
-        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${formattedDate}</span>`;
-        modalUrlEl.textContent = article.url || 'Source URL';
-        modalUrlEl.href = article.url || '#';
-        document.getElementById('view-original-btn').href = article.url || '#';
+        // Split by sentence endings (., !, ?)
+        // This regex looks for sentence endings followed by a space or end of string
+        const sentences = text.match(/[^.!?]+[.!?]+(?:\s|$)/g) || [text];
         
-        // Set rewritten content with copy button
-        if (article.rewritten_html) {
-            rewrittenContentEl.innerHTML = `<div id="rewritten-text" class="animate-in">${article.rewritten_html}</div>`;
-            
-            // Add copy button
-            const copyButtonDiv = document.createElement('div');
-            copyButtonDiv.className = 'flex justify-end space-x-3 mt-4';
-            copyButtonDiv.innerHTML = `
-                <button id="copy-rewritten-btn" class="action-button bg-blue-600 text-white hover:bg-blue-700">
-                    Copy Article
-                </button>
-            `;
-            rewrittenContentEl.appendChild(copyButtonDiv);
-            
-            // Add event listener to copy button
-            setTimeout(() => {
-                const copyBtn = document.getElementById('copy-rewritten-btn');
-                if (copyBtn) {
-                    copyBtn.addEventListener('click', copyArticleContent);
-                }
-            }, 0);
-        } else {
-            rewrittenContentEl.innerHTML = '<p class="text-center py-8 text-gray-500">Not yet rewritten</p>';
-        }
-        
-        // Check if drafted to WordPress
-        if (article.wordpress_id) {
-            const wordpressUrl = getWordPressUrl(article.wordpress_id);
-            wordpressLinkEl.href = wordpressUrl;
-            wordpressLinkEl.classList.remove('hidden');
-            wordpressLinkEl.classList.add('animate-in');
-        } else {
-            wordpressLinkEl.classList.add('hidden');
-        }
-    }, 300);
+        // Clear the paragraph and add each sentence as a span
+        paragraph.innerHTML = '';
+        sentences.forEach(sentence => {
+            if (sentence.trim()) {
+                const sentenceSpan = document.createElement('span');
+                sentenceSpan.className = 'sentence';
+                sentenceSpan.textContent = sentence.trim();
+                paragraph.appendChild(sentenceSpan);
+            }
+        });
+    });
+    
+    return tempDiv.innerHTML;
 }
 
 // Function to trigger the GitHub workflow manually
@@ -798,7 +786,7 @@ function setupEventListeners() {
     
     // Add event listener for the copy button in modal
     document.addEventListener('click', function(e) {
-        if (e.target && e.target.id === 'copy-rewritten-btn') {
+        if (e.target && e.target.id === 'copy-article-btn') {
             copyArticleContent();
         }
     });
@@ -820,7 +808,7 @@ function setupEventListeners() {
 
 // Extract showCopyFeedback as a standalone function for reuse
 function showCopyFeedback(success = true) {
-    const copyBtn = document.getElementById('copy-rewritten-btn');
+    const copyBtn = document.getElementById('copy-article-btn');
     if (copyBtn) {
         const originalText = copyBtn.textContent;
         copyBtn.textContent = success ? 'Copied!' : 'Failed to copy';

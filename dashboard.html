@@ -92,6 +92,16 @@
             background-color: #f0f7ff;
             background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23075985' fill-opacity='0.15'%3E%3Cpath d='M20 0v40M0 20h40'/%3E%3C/g%3E%3C/svg%3E");
         }
+
+        /* WordPress formatting */
+        .wp-formatted p {
+            margin-bottom: 1.5em; /* 1.5 spacing between paragraphs */
+            line-height: 1.8;
+        }
+        .wp-formatted .sentence {
+            display: block; /* One sentence per line */
+            margin-bottom: 0.5em;
+        }
     </style>
 </head>
 <body class="pattern-bg text-gray-900 min-h-screen">
@@ -234,9 +244,8 @@
                 <button id="close-modal" class="text-2xl hover:text-gray-700 transition-colors">&times;</button>
             </div>
             <div class="p-5">
-                <!-- SpotlightCard for Original Article -->
+                <!-- SpotlightCard for Original Article - Simplified to just a link -->
                 <div class="relative mb-6 spotlight-card">
-                    <!-- White gradient background -->
                     <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
                     
                     <div class="relative p-6 rounded-xl border border-gray-100 shadow-sm">
@@ -244,10 +253,6 @@
                             <h3 class="text-lg font-medium text-gray-800 mb-2">Original Article</h3>
                             <p id="modal-date" class="text-sm text-gray-500 mb-2">Published: <span class="font-medium">Loading date...</span></p>
                             <p class="text-sm mb-4">Source: <a href="#" target="_blank" id="modal-url" class="text-primary-600 hover:underline">Loading...</a></p>
-                        </div>
-                        
-                        <div id="original-content" class="bg-white p-4 rounded-lg border border-gray-100 max-h-80 overflow-y-auto mb-4">
-                            Loading original content...
                         </div>
                         
                         <div class="flex justify-end space-x-3">
@@ -260,7 +265,6 @@
                 
                 <!-- SpotlightCard for Rewritten Article -->
                 <div class="relative spotlight-card">
-                    <!-- White gradient background -->
                     <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
                     
                     <div class="relative p-6 rounded-xl border border-gray-100 shadow-sm">
@@ -273,12 +277,12 @@
                             </div>
                         </div>
                         
-                        <div id="rewritten-content" class="bg-white p-4 rounded-lg border border-gray-100 max-h-80 overflow-y-auto mb-4">
+                        <div id="rewritten-content" class="bg-white p-4 rounded-lg border border-gray-100 max-h-80 overflow-y-auto mb-4 wp-formatted">
                             Loading rewritten content...
                         </div>
                         
                         <div class="flex justify-end space-x-3">
-                            <button id="copy-rewritten-btn" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                            <button id="copy-article-btn" class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
                                 Copy Article
                             </button>
                         </div>

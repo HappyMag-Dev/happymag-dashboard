@@ -225,8 +225,9 @@
             </div>
         </section>
 
-        Recent Activity
-        <!-- <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
+        <!-- Recent Activity - Currently Hidden -->
+        <!-- 
+        <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-medium text-gray-800">Recent Activity</h2>
                 <div class="flex space-x-2">
@@ -254,7 +255,8 @@
                     </tbody>
                 </table>
             </div>
-        </section> -->
+        </section>
+        -->
     </div>
 
     <!-- Article Modal -->

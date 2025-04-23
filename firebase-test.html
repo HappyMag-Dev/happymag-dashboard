@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Connection Test</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Firebase Connection Test</h1>
+        <p>This page will test the connection to Firebase and retrieve the GitHub token.</p>
+        
+        <button id="test-connection">Test Firebase Connection</button>
+        <button id="test-token">Test GitHub Token</button>
+        
+        <div id="result" class="result">Results will appear here...</div>
+    </div>
+
+    <script>
+        // Firebase Configuration - same as in your app.js
+        const firebaseConfig = {
+            apiKey: "AIzaSyAmahPg4Y06bQZ2eV132cxwvibpk96YeIA",
+            authDomain: "happy-mag-content.firebaseapp.com",
+            projectId: "happy-mag-content",
+            storageBucket: "happy-mag-content.firebasestorage.app",
+            messagingSenderId: "1083309043960",
+            appId: "1:1083309043960:web:c252601041193e1d7a4b0d"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // DOM elements
+        const testConnectionBtn = document.getElementById('test-connection');
+        const testTokenBtn = document.getElementById('test-token');
+        const resultDiv = document.getElementById('result');
+        
+        // Test Firebase connection
+        testConnectionBtn.addEventListener('click', () => {
+            resultDiv.className = 'result';
+            resultDiv.textContent = 'Testing Firebase connection...';
+            
+            db.collection('system').get()
+                .then(snapshot => {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Connection successful! Found ${snapshot.size} documents in the system collection.`;
+                })
+                .catch(error => {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Connection error: ${error.message}`;
+                    console.error('Error testing connection:', error);
+                });
+        });
+        
+        // Test GitHub token retrieval
+        testTokenBtn.addEventListener('click', () => {
+            resultDiv.className = 'result';
+            resultDiv.textContent = 'Retrieving GitHub token...';
+            
+            db.collection('system').doc('config').get()
+                .then(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.github_token) {
+                            const tokenLength = data.github_token.length;
+                            const firstChars = data.github_token.substring(0, 5);
+                            const lastChars = data.github_token.substring(tokenLength - 5);
+                            
+                            resultDiv.className = 'result success';
+                            resultDiv.textContent = `✅ Token found!\n\nToken length: ${tokenLength}\nToken preview: ${firstChars}...${lastChars}\n\nThis means your token is stored correctly in Firestore at system/config/github_token.`;
+                        } else {
+                            resultDiv.className = 'result error';
+                            resultDiv.textContent = `❌ The document exists, but github_token field is missing.\n\nDocument data: ${JSON.stringify(doc.data(), null, 2)}`;
+                        }
+                    } else {
+                        resultDiv.className = 'result error';
+                        resultDiv.textContent = '❌ Document "config" does not exist in the "system" collection.';
+                    }
+                })
+                .catch(error => {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Error retrieving token: ${error.message}`;
+                    console.error('Error retrieving token:', error);
+                });
+        });
+    </script>
+</body>
+</html> 

@@ -225,8 +225,8 @@
             </div>
         </section>
 
-        Recent Activity
-        <!-- <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
+        <!-- Recent Activity
+        <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-medium text-gray-800">Recent Activity</h2>
                 <div class="flex space-x-2">
@@ -289,6 +289,8 @@
                             <div id="rewritten-content" class="bg-white p-5 rounded-lg border border-gray-100 max-h-[500px] overflow-y-auto mb-4">
                                 Loading rewritten content...
                             </div>
+                            
+                            <!-- We removed the button here since it will be dynamically added by JavaScript -->
                         </div>
                     </div>
                 </div>

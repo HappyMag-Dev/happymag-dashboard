@@ -262,68 +262,76 @@ function loadArticles() {
         });
 }
 
+// Helper function to get status badge HTML
+function getStatusBadge(status) {
+    switch(status) {
+        case 'scraped':
+            return '<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">Scraped</span>';
+        case 'rewritten':
+            return '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">Rewritten</span>';
+        case 'drafted':
+            return '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded">Published</span>';
+        default:
+            return '<span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">Pending</span>';
+    }
+}
+
 // Render articles based on filter
 function renderArticles() {
-    // Filter articles
-    let filteredArticles = articles;
-    if (currentFilter !== 'all') {
-        filteredArticles = articles.filter(article => article.status === currentFilter);
-    }
-    
-    // Check if there are no articles
-    if (filteredArticles.length === 0) {
+    if (!articles || articles.length === 0) {
         articlesContainerEl.innerHTML = `
-            <div class="col-span-3 flex items-center justify-center h-40 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div class="text-center py-10">
                 <p class="text-gray-500">No articles found</p>
             </div>
         `;
         return;
     }
-    
-    // Render articles
+
+    let filteredArticles = articles;
+    if (currentFilter && currentFilter !== 'all') {
+        filteredArticles = articles.filter(article => article.status === currentFilter);
+    }
+
+    if (filteredArticles.length === 0) {
+        articlesContainerEl.innerHTML = `
+            <div class="text-center py-10">
+                <p class="text-gray-500">No articles found with status: ${currentFilter}</p>
+            </div>
+        `;
+        return;
+    }
+
     let html = '';
-    filteredArticles.forEach((article, index) => {
-        const title = article.title || 'Untitled Article';
-        const published = article.published || 'Unknown date';
-        const author = article.author || 'Unknown author';
+    filteredArticles.forEach(article => {
+        const statusBadge = getStatusBadge(article.status);
+        const statusText = article.status ? article.status : 'pending';
         
-        let statusBadge = '';
-        let viewButtonText = 'View Details';
-        let buttonColorClass = 'bg-primary-600 hover:bg-primary-700'; // Default blue
-        
-        if (article.status === 'scraped') {
-            statusBadge = '<span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded">Found</span>';
-            buttonColorClass = 'bg-primary-600 hover:bg-primary-700'; // Blue for found/scraped
-        } else if (article.status === 'rewritten') {
-            statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">Rewritten</span>';
-            viewButtonText = 'View & Copy';
-            buttonColorClass = 'bg-amber-600 hover:bg-amber-700'; // Amber for rewritten
-        } else if (article.status === 'drafted') {
-            statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded">Published</span>';
-            viewButtonText = 'View & Copy';
-            buttonColorClass = 'bg-emerald-600 hover:bg-emerald-700'; // Green for published/drafted
-        }
-        
-        const animationDelay = index * 0.05;
+        const title = article.title || 'No title';
+        const createdDate = article.created ? new Date(article.created.seconds * 1000).toLocaleDateString() : 'Unknown';
+        const lastUpdated = article.updated ? new Date(article.updated.seconds * 1000).toLocaleDateString() : createdDate;
         
         html += `
-            <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm article-card opacity-0 card-with-depth" 
-                 style="animation: fadeIn 0.5s ease-out forwards, slideUp 0.5s ease-out forwards; animation-delay: ${animationDelay}s;">
-                <div class="flex justify-between items-start mb-2">
-                    ${statusBadge}
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="p-4">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1">${title}</h3>
+                        ${statusBadge}
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">${article.snippet || 'No snippet available'}</p>
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs text-gray-500">
+                            Created: ${createdDate}<br>
+                            Updated: ${lastUpdated}
+                        </div>
+                        <button class="view-article-btn bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm" data-id="${article.id}">
+                            View & Copy
+                        </button>
+                    </div>
                 </div>
-                <h3 class="font-semibold mb-2 line-clamp-2">${title}</h3>
-                <div class="text-sm text-gray-500 mb-4">
-                    <div>${published}</div>
-                    <div>${author}</div>
-                </div>
-                <button class="action-button text-white text-sm ${buttonColorClass} view-article-btn" data-id="${article.id}">
-                    ${viewButtonText}
-                </button>
             </div>
         `;
     });
-    
+
     articlesContainerEl.innerHTML = html;
 }
 
@@ -391,32 +399,8 @@ function formatAustralianDate(dateString) {
 
 // Open article modal
 function openArticleModal(articleId) {
-    console.log("Opening modal for article ID:", articleId);
-    console.log("Articles array length:", articles ? articles.length : 0);
-    
     const article = articles.find(a => a.id === articleId);
-    console.log("Found article:", article ? "Yes" : "No");
-    
-    if (!article) {
-        console.error("Article not found with ID:", articleId);
-        return;
-    }
-    
-    // Check if modal elements exist
-    if (!articleModalEl) {
-        console.error("articleModalEl not found");
-        return;
-    }
-    
-    if (!modalTitleEl) {
-        console.error("modalTitleEl not found");
-        return;
-    }
-    
-    if (!rewrittenContentEl) {
-        console.error("rewrittenContentEl not found");
-        return;
-    }
+    if (!article) return;
     
     // Set modal title
     modalTitleEl.textContent = article.title || 'Untitled Article';
@@ -433,7 +417,6 @@ function openArticleModal(articleId) {
     `;
     
     // Show modal first for better UX
-    console.log("Removing 'hidden' class from modal");
     articleModalEl.classList.remove('hidden');
     
     // Set content with a small delay
@@ -694,13 +677,10 @@ function setupEventListeners() {
         let target = e.target;
         let articleButton = null;
         
-        console.log("Click detected in articles container", e.target);
-        
         // Traverse up to find the button if clicked on a child element
         while (target && target !== this) {
             if (target.classList.contains('view-article-btn')) {
                 articleButton = target;
-                console.log("Found view-article-btn:", target);
                 break;
             }
             target = target.parentElement;
@@ -709,13 +689,20 @@ function setupEventListeners() {
         // If we found a button, get its data-id and open the modal
         if (articleButton) {
             const articleId = articleButton.getAttribute('data-id');
-            console.log("Article ID:", articleId);
             if (articleId) {
                 e.preventDefault();
                 e.stopPropagation();
                 openArticleModal(articleId);
                 return false;
             }
+        }
+    });
+    
+    // Add event listener for the copy button in modal using event delegation
+    document.addEventListener('click', function(e) {
+        // Handle copy button in modal
+        if (e.target && e.target.id === 'copy-rewritten-btn') {
+            copyArticleContent();
         }
     });
     

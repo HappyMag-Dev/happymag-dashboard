@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Token Fixer</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GitHub Token Fixer</h1>
+        <p>This utility helps fix GitHub token issues by ensuring it's correctly stored in Firebase.</p>
+        
+        <div>
+            <button id="check-token">Check Current Token</button>
+            <button id="copy-token">Copy Current Token to Clipboard</button>
+            <button id="fix-token">Fix Token Storage</button>
+        </div>
+        
+        <div>
+            <h3>Manual Token Update</h3>
+            <p>Paste your GitHub token below and click "Update Token" to manually set it:</p>
+            <textarea id="token-input" placeholder="Paste your GitHub token here..."></textarea>
+            <button id="update-token">Update Token</button>
+        </div>
+        
+        <div id="result" class="result">Results will appear here...</div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAmahPg4Y06bQZ2eV132cxwvibpk96YeIA",
+            authDomain: "happy-mag-content.firebaseapp.com",
+            projectId: "happy-mag-content",
+            storageBucket: "happy-mag-content.firebasestorage.app",
+            messagingSenderId: "1083309043960",
+            appId: "1:1083309043960:web:c252601041193e1d7a4b0d"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // DOM elements
+        const checkTokenBtn = document.getElementById('check-token');
+        const copyTokenBtn = document.getElementById('copy-token');
+        const fixTokenBtn = document.getElementById('fix-token');
+        const updateTokenBtn = document.getElementById('update-token');
+        const tokenInput = document.getElementById('token-input');
+        const resultDiv = document.getElementById('result');
+        
+        // Get current token
+        let currentToken = null;
+        
+        // Check current token
+        checkTokenBtn.addEventListener('click', async () => {
+            resultDiv.className = 'result';
+            resultDiv.textContent = 'Checking GitHub token in Firebase...';
+            
+            try {
+                // Check for token in original location
+                const configDoc = await db.collection('system').doc('config').get();
+                
+                if (configDoc.exists && configDoc.data().github_token) {
+                    currentToken = configDoc.data().github_token;
+                    const tokenLength = currentToken.length;
+                    const firstChars = currentToken.substring(0, 5);
+                    const lastChars = currentToken.substring(tokenLength - 5);
+                    
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Token found in system/config!\n\nToken length: ${tokenLength}\nToken preview: ${firstChars}...${lastChars}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = 'Token not found in system/config document. Document exists: ' + configDoc.exists;
+                    
+                    if (configDoc.exists) {
+                        resultDiv.textContent += '\nDocument fields: ' + Object.keys(configDoc.data() || {}).join(', ');
+                    }
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error checking token: ' + error.message;
+                console.error('Error checking token:', error);
+            }
+        });
+        
+        // Copy token to clipboard
+        copyTokenBtn.addEventListener('click', async () => {
+            try {
+                if (!currentToken) {
+                    const configDoc = await db.collection('system').doc('config').get();
+                    if (configDoc.exists && configDoc.data().github_token) {
+                        currentToken = configDoc.data().github_token;
+                    } else {
+                        throw new Error('No token found to copy');
+                    }
+                }
+                
+                await navigator.clipboard.writeText(currentToken);
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '✅ Token copied to clipboard!';
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error copying token: ' + error.message;
+            }
+        });
+        
+        // Fix token storage
+        fixTokenBtn.addEventListener('click', async () => {
+            resultDiv.className = 'result';
+            resultDiv.textContent = 'Fixing token storage...';
+            
+            try {
+                if (!currentToken) {
+                    const configDoc = await db.collection('system').doc('config').get();
+                    if (configDoc.exists && configDoc.data().github_token) {
+                        currentToken = configDoc.data().github_token;
+                    } else {
+                        throw new Error('No token found to fix. Please use "Update Token" to manually set one.');
+                    }
+                }
+                
+                // Make sure the token is stored in the correct location
+                await db.collection('system').doc('config').set({
+                    github_token: currentToken
+                }, { merge: true });
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '✅ Token storage fixed successfully!';
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error fixing token: ' + error.message;
+                console.error('Error fixing token:', error);
+            }
+        });
+        
+        // Update token
+        updateTokenBtn.addEventListener('click', async () => {
+            const newToken = tokenInput.value.trim();
+            
+            if (!newToken) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Please enter a valid GitHub token';
+                return;
+            }
+            
+            resultDiv.className = 'result';
+            resultDiv.textContent = 'Updating GitHub token...';
+            
+            try {
+                // Update token in the correct location
+                await db.collection('system').doc('config').set({
+                    github_token: newToken
+                }, { merge: true });
+                
+                currentToken = newToken;
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = '✅ Token updated successfully!';
+                
+                // Clear the input for security
+                tokenInput.value = '';
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error updating token: ' + error.message;
+                console.error('Error updating token:', error);
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -386,7 +386,7 @@ function renderArticles() {
         } else if (article.status === 'rewritten') {
             statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-4 py-2 rounded">Rewritten</span>';
             viewButtonText = 'View & Copy';
-            buttonColorClass = 'bg-gray-600 hover:bg-gray-700'; // Changed from amber to gray
+            buttonColorClass = 'bg-white text-amber-600 border border-amber-600 hover:bg-amber-50'; // Orange text, white background
         } else if (article.status === 'drafted') {
             statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-4 py-2 rounded">Published</span>';
             viewButtonText = 'View & Copy';

@@ -63,7 +63,6 @@
         }
         .stat-card {
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         .stat-card:hover {
             transform: translateY(-5px);
@@ -93,27 +92,15 @@
             background-color: #f0f7ff;
             background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23075985' fill-opacity='0.15'%3E%3Cpath d='M20 0v40M0 20h40'/%3E%3C/g%3E%3C/svg%3E");
         }
-        
-        /* Card with depth */
-        .card-with-depth {
-            box-shadow: 
-                0 2px 4px -1px rgba(0, 0, 0, 0.06),
-                0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                0 10px 15px -3px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: linear-gradient(145deg, #ffffff, #f8fafc);
+
+        /* WordPress formatting */
+        .wp-formatted p {
+            margin-bottom: 1.5em; /* 1.5 spacing between paragraphs */
+            line-height: 1.8;
         }
-        
-        /* Button styles */
-        .action-button {
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        .wp-formatted .sentence {
+            display: block; /* One sentence per line */
+            margin-bottom: 0.5em;
         }
     </style>
 </head>
@@ -132,12 +119,12 @@
 
         <!-- Stats Overview with Bento Grid -->
         <section class="mb-8 animate-slide-up" style="animation-delay: 0.1s">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <!-- Main stats card - spans full width on mobile, 1 column on desktop -->
-                <div class="col-span-1 card-with-depth bg-white p-6 rounded-xl shadow-sm stat-card">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-5">
+                <!-- Main stats card - spans 2 columns -->
+                <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 stat-card">
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-lg font-medium text-gray-800">Dashboard Overview</h3>
-                        <button id="run-workflow-btn" class="action-button bg-primary-600 text-white hover:bg-primary-700 text-sm group relative tooltip" title="Runs the content pipeline using GitHub Actions. This will scrape new articles and process them.">
+                        <button id="run-workflow-btn" class="action-button border border-primary-600 text-primary-600 hover:bg-primary-50 text-sm group relative tooltip" title="Runs the content pipeline using GitHub Actions. This will scrape new articles and process them.">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -181,8 +168,8 @@
                     <div class="mt-4 text-sm text-gray-500" id="last-updated">Last updated: Loading...</div>
                 </div>
 
-                <!-- Articles Found stats card -->
-                <div class="col-span-1 card-with-depth bg-white p-6 rounded-xl shadow-sm flex flex-col justify-between stat-card">
+                <!-- Three stats cards - each spans 2 columns on desktop, full width on mobile -->
+                <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
                     <div>
                         <h3 class="text-sm font-medium text-gray-500">Articles Found</h3>
                         <p class="text-4xl font-bold mt-2 text-gray-800 stat-number" id="scraped-count">0</p>
@@ -192,8 +179,7 @@
                     </div>
                 </div>
                 
-                <!-- Articles Rewritten stats card -->
-                <div class="col-span-1 card-with-depth bg-white p-6 rounded-xl shadow-sm flex flex-col justify-between stat-card">
+                <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
                     <div>
                         <h3 class="text-sm font-medium text-gray-500">Articles Rewritten</h3>
                         <p class="text-4xl font-bold mt-2 text-gray-800 stat-number" id="rewritten-count">0</p>
@@ -202,10 +188,20 @@
                         <div class="bg-amber-400 h-2 rounded-full progress-bar" id="rewritten-progress" style="width: 0%"></div>
                     </div>
                 </div>
+                
+                <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between stat-card">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500">Articles Published</h3>
+                        <p class="text-4xl font-bold mt-2 text-gray-800 stat-number" id="posted-count">0</p>
+                    </div>
+                    <div class="mt-5 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-emerald-400 h-2 rounded-full progress-bar" id="posted-progress" style="width: 0%"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Recent Articles -->
+        <!-- Recent Articles (Moved up) -->
         <section class="mb-8 animate-slide-up" style="animation-delay: 0.2s">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-medium text-gray-800">Recent Articles</h2>
@@ -225,20 +221,17 @@
             </div>
         </section>
 
-        Recent Activity
-        <!-- <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
+        <!-- Recent Activity (Now below Articles) -->
+        <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-medium text-gray-800">Recent Activity</h2>
                 <div class="flex space-x-2">
-                    <button class="action-button bg-primary-600 text-white hover:bg-primary-700" id="refresh-btn">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
+                    <button class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors" id="refresh-btn">
                         Refresh
                     </button>
                 </div>
             </div>
-            <div class="card-with-depth bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <table class="w-full">
                     <thead>
                         <tr class="bg-gray-50 text-left border-b border-gray-100">
@@ -254,44 +247,62 @@
                     </tbody>
                 </table>
             </div>
-        </section> -->
+        </section>
     </div>
 
     <!-- Article Modal -->
     <div id="article-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 animate-in">
-        <div class="bg-white rounded-xl max-w-5xl w-full max-h-screen overflow-y-auto mx-4 shadow-xl">
+        <div class="bg-white rounded-xl max-w-4xl w-full max-h-screen overflow-y-auto mx-4 shadow-xl">
             <div class="flex justify-between items-center p-4 border-b border-gray-100">
                 <h2 class="text-xl font-medium text-gray-800" id="modal-title">Article Details</h2>
                 <button id="close-modal" class="text-2xl hover:text-gray-700 transition-colors">&times;</button>
             </div>
             <div class="p-5">
-                <!-- Content layout -->
-                <div class="grid grid-cols-1 gap-6">
-                    <!-- SpotlightCard for Rewritten Article -->
-                    <div class="relative spotlight-card">
-                        <!-- White gradient background -->
-                        <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
+                <!-- SpotlightCard for Original Article - Simplified to just a link -->
+                <div class="relative mb-6 spotlight-card">
+                    <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
+                    
+                    <div class="relative p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-medium text-gray-800 mb-2">Original Article</h3>
+                            <p id="modal-date" class="text-sm text-gray-500 mb-2">Published: <span class="font-medium">Loading date...</span></p>
+                            <p class="text-sm mb-4">Source: <a href="#" target="_blank" id="modal-url" class="text-primary-600 hover:underline">Loading...</a></p>
+                        </div>
                         
-                        <div class="relative p-6 rounded-xl border border-gray-100 shadow-sm">
-                            <div class="mb-4">
-                                <div class="flex items-center justify-between">
-                                    <h3 class="text-lg font-medium text-gray-800 mb-2">Rewritten Article</h3>
-                                    <p id="modal-date" class="text-xs text-gray-500">Published: <span class="font-medium">Loading date...</span></p>
-                                </div>
-                                <div class="flex items-center mt-2">
-                                    <a href="#" target="_blank" id="wordpress-link" class="text-primary-600 hover:underline hidden mr-4">
-                                        View on Website
-                                    </a>
-                                    <a href="#" target="_blank" id="modal-url" class="text-primary-600 hover:underline text-sm">Source</a>
-                                </div>
-                            </div>
-                            
-                            <div id="rewritten-content" class="bg-white p-5 rounded-lg border border-gray-100 max-h-[500px] overflow-y-auto mb-4">
-                                Loading rewritten content...
-                            </div>
+                        <div class="flex justify-end space-x-3">
+                            <a href="#" target="_blank" id="view-original-btn" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                                View Original
+                            </a>
                         </div>
                     </div>
                 </div>
+                
+                <!-- SpotlightCard for Rewritten Article -->
+                <div class="relative spotlight-card">
+                    <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
+                    
+                    <div class="relative p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-medium text-gray-800 mb-2">Rewritten Article</h3>
+                            <div class="flex items-center">
+                                <a href="#" target="_blank" id="wordpress-link" class="text-primary-600 hover:underline hidden mr-4">
+                                    View on Website
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div id="rewritten-content" class="bg-white p-4 rounded-lg border border-gray-100 max-h-80 overflow-y-auto mb-4 wp-formatted">
+                            Loading rewritten content...
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button id="copy-article-btn" class="px-3 py-1 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors">
+                                Copy Article
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
             </div>
         </div>
     </div>

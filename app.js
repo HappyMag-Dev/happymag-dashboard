@@ -374,21 +374,19 @@ function renderArticles() {
         
         let statusBadge = '';
         let viewButtonText = 'View Details';
-        
-        // Create button color classes for outlined buttons instead of filled
-        let buttonColorClass = 'border border-primary-600 text-primary-600 hover:bg-primary-50'; // Default blue outlined
+        let buttonColorClass = 'bg-primary-600 hover:bg-primary-700'; // Default blue
         
         if (article.status === 'scraped') {
             statusBadge = '<span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded">Found</span>';
-            buttonColorClass = 'border border-primary-600 text-primary-600 hover:bg-primary-50'; // Blue outlined
+            buttonColorClass = 'bg-primary-600 hover:bg-primary-700'; // Blue for found/scraped
         } else if (article.status === 'rewritten') {
             statusBadge = '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">Rewritten</span>';
             viewButtonText = 'View & Copy';
-            buttonColorClass = 'border border-amber-600 text-amber-600 hover:bg-amber-50'; // Amber outlined
+            buttonColorClass = 'bg-amber-600 hover:bg-amber-700'; // Amber for rewritten
         } else if (article.status === 'drafted') {
             statusBadge = '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded">Published</span>';
             viewButtonText = 'View & Copy';
-            buttonColorClass = 'border border-emerald-600 text-emerald-600 hover:bg-emerald-50'; // Green outlined
+            buttonColorClass = 'bg-emerald-600 hover:bg-emerald-700'; // Green for published/drafted
         }
         
         const animationDelay = index * 0.05;
@@ -405,7 +403,7 @@ function renderArticles() {
                     <div>${publishedDate}</div>
                     <div>${author}</div>
                 </div>
-                <button class="action-button text-sm ${buttonColorClass} view-article-btn" data-id="${article.id}">
+                <button class="action-button text-white text-sm ${buttonColorClass} view-article-btn" data-id="${article.id}">
                     ${viewButtonText}
                 </button>
             </div>
@@ -426,116 +424,73 @@ function renderArticles() {
 // Function to open the article modal
 function openArticleModal(articleId) {
     const article = articles.find(a => a.id === articleId);
-    if (!article) {
-        showToast('Article not found', 'error');
-        return;
-    }
-
-    // Show modal
-    articleModalEl.classList.remove('hidden');
-
-    // Reset modal content
-    modalTitleEl.textContent = 'Loading...';
-    originalContentEl.innerHTML = `
-        <div class="flex items-center justify-center py-8">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-gray-500">Loading article content...</span>
-        </div>
-    `;
-    rewrittenContentEl.innerHTML = '';
-    modalUrlEl.textContent = '';
-    modalUrlEl.href = '';
-    document.getElementById('view-original-btn').href = '';
-    wordpressLinkEl.classList.add('hidden');
-
-    // Set title immediately
+    if (!article) return;
+    
+    // Set modal title
     modalTitleEl.textContent = article.title || 'Untitled Article';
-
-    // Set original content with a small delay
-    setTimeout(() => {
-        originalContentEl.innerHTML = `<p>${article.body || 'No content available'}</p>`;
-        
-        // Set date and URL
-        // Format date properly
-        let formattedDate = 'Unknown date';
-        if (article.published) {
-            try {
-                // Handle the timezone issue to ensure correct date is displayed
-                const dateString = article.published;
-                
-                // If the date is supposed to be April 23rd for all articles
-                if (dateString.includes('2025-04-22') || dateString.includes('04/22/2025')) {
-                    formattedDate = '23/04/2025'; // Directly use the correct date
+    
+    // Show modal first for better UX
+    articleModalEl.classList.remove('hidden');
+    
+    // Set date and URL
+    let formattedDate = 'Unknown date';
+    if (article.published) {
+        try {
+            // Handle the timezone issue to ensure correct date is displayed
+            const dateString = article.published;
+            
+            // If the date is supposed to be April 23rd for all articles
+            if (dateString.includes('2025-04-22') || dateString.includes('04/22/2025')) {
+                formattedDate = '23/04/2025'; // Directly use the correct date
+            } else {
+                // For other dates, parse normally but handle timezone issues
+                const date = new Date(article.published);
+                if (!isNaN(date.getTime())) {
+                    // Add a day to fix the timezone issue if needed
+                    const fixedDate = new Date(date);
+                    // Uncomment the next line if all dates need to be shifted by one day
+                    // fixedDate.setDate(fixedDate.getDate() + 1);
+                    
+                    // Use Australian date format (DD/MM/YYYY)
+                    formattedDate = fixedDate.toLocaleDateString('en-AU', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    });
                 } else {
-                    // For other dates, parse normally but handle timezone issues
-                    const date = new Date(article.published);
-                    if (!isNaN(date.getTime())) {
-                        // Add a day to fix the timezone issue if needed
-                        const fixedDate = new Date(date);
-                        // Uncomment the next line if all dates need to be shifted by one day
-                        // fixedDate.setDate(fixedDate.getDate() + 1);
-                        
-                        // Use Australian date format (DD/MM/YYYY)
-                        formattedDate = fixedDate.toLocaleDateString('en-AU', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                        });
-                    } else {
-                        // If date parsing fails, use the original string
-                        formattedDate = article.published;
-                    }
+                    // If date parsing fails, use the original string
+                    formattedDate = article.published;
                 }
-            } catch (e) {
-                console.error('Error formatting date in modal:', e);
-                formattedDate = article.published; // Use the original string as fallback
             }
+        } catch (e) {
+            console.error('Error formatting date:', e);
+            formattedDate = article.published; // Use the original string as fallback
         }
-        
-        // Set date and URL
-        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${formattedDate}</span>`;
-        modalUrlEl.textContent = article.url || 'Source URL';
-        modalUrlEl.href = article.url || '#';
-        document.getElementById('view-original-btn').href = article.url || '#';
-        
-        // Set rewritten content with copy button
-        if (article.rewritten_html) {
-            rewrittenContentEl.innerHTML = `<div id="rewritten-text" class="animate-in">${article.rewritten_html}</div>`;
-            
-            // Add copy button with outlined style instead of filled
-            const copyButtonDiv = document.createElement('div');
-            copyButtonDiv.className = 'flex justify-end space-x-3 mt-4';
-            copyButtonDiv.innerHTML = `
-                <button id="copy-rewritten-btn" class="action-button border border-blue-600 text-blue-600 hover:bg-blue-50">
-                    Copy Article
-                </button>
-            `;
-            rewrittenContentEl.appendChild(copyButtonDiv);
-            
-            // Add event listener to copy button
-            setTimeout(() => {
-                const copyBtn = document.getElementById('copy-rewritten-btn');
-                if (copyBtn) {
-                    copyBtn.addEventListener('click', copyArticleContent);
-                }
-            }, 0);
-        } else {
-            rewrittenContentEl.innerHTML = '<p class="text-center py-8 text-gray-500">Not yet rewritten</p>';
-        }
-        
-        // Check if drafted to WordPress
-        if (article.wordpress_id) {
-            const wordpressUrl = getWordPressUrl(article.wordpress_id);
-            wordpressLinkEl.href = wordpressUrl;
-            wordpressLinkEl.classList.remove('hidden');
-            wordpressLinkEl.classList.add('animate-in');
-        } else {
-            wordpressLinkEl.classList.add('hidden');
-        }
-    }, 300);
+    }
+    
+    document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${formattedDate}</span>`;
+    modalUrlEl.textContent = article.url || 'Source URL';
+    modalUrlEl.href = article.url || '#';
+    document.getElementById('view-original-btn').href = article.url || '#';
+    
+    // Set rewritten content with formatting for WordPress
+    if (article.rewritten_html) {
+        // Process the content to format with one sentence per line
+        let formattedContent = formatForWordPress(article.rewritten_html);
+        rewrittenContentEl.innerHTML = `<div id="rewritten-text" class="animate-in">${formattedContent}</div>`;
+    } else {
+        rewrittenContentEl.innerHTML = '<p class="text-center py-8 text-gray-500">Not yet rewritten</p>';
+    }
+    
+    // Check if drafted to WordPress
+    if (article.wordpress_id) {
+        const wordpressUrl = getWordPressUrl(article.wordpress_id);
+        wordpressLinkEl.href = wordpressUrl;
+        wordpressLinkEl.classList.remove('hidden');
+        wordpressLinkEl.classList.add('animate-in');
+    } else {
+        wordpressLinkEl.classList.add('hidden');
+    }
 }
 
 // Function to format content for WordPress with one sentence per line
@@ -831,7 +786,7 @@ function setupEventListeners() {
     
     // Add event listener for the copy button in modal
     document.addEventListener('click', function(e) {
-        if (e.target && e.target.id === 'copy-rewritten-btn') {
+        if (e.target && e.target.id === 'copy-article-btn') {
             copyArticleContent();
         }
     });
@@ -853,33 +808,19 @@ function setupEventListeners() {
 
 // Extract showCopyFeedback as a standalone function for reuse
 function showCopyFeedback(success = true) {
-    const copyBtn = document.getElementById('copy-rewritten-btn') || document.getElementById('copy-article-btn');
+    const copyBtn = document.getElementById('copy-article-btn');
     if (copyBtn) {
         const originalText = copyBtn.textContent;
         copyBtn.textContent = success ? 'Copied!' : 'Failed to copy';
-        
-        // Remove original outlined styles
-        copyBtn.classList.remove('border-blue-600', 'text-blue-600', 'hover:bg-blue-50');
-        
-        // Add success/error outlined styles
-        if (success) {
-            copyBtn.classList.add('border-green-600', 'text-green-600', 'hover:bg-green-50');
-        } else {
-            copyBtn.classList.add('border-red-600', 'text-red-600', 'hover:bg-red-50');
-        }
+        copyBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        copyBtn.classList.add(success ? 'bg-green-600' : 'bg-red-600', 
+                             success ? 'hover:bg-green-700' : 'hover:bg-red-700');
         
         setTimeout(() => {
             copyBtn.textContent = originalText;
-            
-            // Remove success/error outlined styles
-            if (success) {
-                copyBtn.classList.remove('border-green-600', 'text-green-600', 'hover:bg-green-50');
-            } else {
-                copyBtn.classList.remove('border-red-600', 'text-red-600', 'hover:bg-red-50');
-            }
-            
-            // Add back original outlined styles
-            copyBtn.classList.add('border-blue-600', 'text-blue-600', 'hover:bg-blue-50');
+            copyBtn.classList.remove(success ? 'bg-green-600' : 'bg-red-600', 
+                                   success ? 'hover:bg-green-700' : 'hover:bg-red-700');
+            copyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
         }, 2000);
     }
 }

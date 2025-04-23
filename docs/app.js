@@ -43,47 +43,14 @@ const currentDateEl = document.getElementById('current-date');
 const githubConfig = {
     repoOwner: 'HappyMag-Dev',
     repoName: 'happymag-ai-content',
-    workflowId: 'content-pipeline.yml', // Use just the filename as GitHub API expects
-    workflowPath: '.github/workflows/content-pipeline.yml', // Full path for reference
-    accessToken: '' // This will be populated from Firebase
+    workflowId: 'content-pipeline.yml',
+    accessToken: '', // This should be configured securely
+    branch: 'main' // Added for the new trigger method
 };
 
 // Global state
 let currentFilter = 'all';
 let articles = [];
-
-// Load GitHub API token securely from Firebase
-function loadGitHubToken() {
-    console.log('Attempting to load GitHub token from Firebase...');
-    
-    return db.collection('system').doc('config').get()
-        .then(doc => {
-            console.log('Firebase doc retrieval attempt complete');
-            console.log('Document exists:', doc.exists);
-            if (doc.exists) {
-                console.log('Document data:', Object.keys(doc.data() || {}));
-            }
-            
-            if (doc.exists && doc.data().github_token) {
-                const token = doc.data().github_token;
-                if (token.length > 0) {
-                    githubConfig.accessToken = token;
-                    console.log('GitHub token loaded successfully (length: ' + token.length + ')');
-                    return true;
-                } else {
-                    console.warn('GitHub token exists but is empty');
-                    return false;
-                }
-            } else {
-                console.warn('GitHub token not found in Firebase config');
-                return false;
-            }
-        })
-        .catch(error => {
-            console.error('Error loading GitHub token:', error);
-            return false;
-        });
-}
 
 // Initialize the dashboard
 function initDashboard() {
@@ -91,31 +58,16 @@ function initDashboard() {
     const now = new Date();
     currentDateEl.textContent = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     
-    // Load GitHub token and then continue
-    loadGitHubToken().then(tokenLoaded => {
-        if (tokenLoaded) {
-            console.log('GitHub token loaded, direct workflow triggers will be available');
-            if (runWorkflowBtnEl) {
-                runWorkflowBtnEl.title = "Click to run the content pipeline now";
-            }
-        } else {
-            console.warn('GitHub token not loaded, will use browser redirect instead');
-            if (runWorkflowBtnEl) {
-                runWorkflowBtnEl.title = "Will open GitHub to trigger workflow manually";
-            }
-        }
-        
-        // Update timestamps
-        updateLastUpdated();
-        
-        // Load data
-        loadStats();
-        loadActivity();
-        loadArticles();
-        
-        // Set up event listeners
-        setupEventListeners();
-    });
+    // Update timestamps
+    updateLastUpdated();
+    
+    // Load data
+    loadStats();
+    loadActivity();
+    loadArticles();
+    
+    // Set up event listeners
+    setupEventListeners();
 }
 
 // Update the last updated timestamp
@@ -333,43 +285,7 @@ function renderArticles() {
     let html = '';
     filteredArticles.forEach((article, index) => {
         const title = article.title || 'Untitled Article';
-        
-        // Format the published date properly
-        let publishedDate = 'Unknown date';
-        if (article.published) {
-            try {
-                // Handle the timezone issue to ensure correct date is displayed
-                const dateString = article.published;
-                
-                // If the date is supposed to be April 23rd for all articles
-                if (dateString.includes('2025-04-22') || dateString.includes('04/22/2025')) {
-                    publishedDate = '23/04/2025'; // Directly use the correct date
-                } else {
-                    // For other dates, parse normally but handle timezone issues
-                    const date = new Date(article.published);
-                    if (!isNaN(date.getTime())) {
-                        // Add a day to fix the timezone issue if needed
-                        const fixedDate = new Date(date);
-                        // Uncomment the next line if all dates need to be shifted by one day
-                        // fixedDate.setDate(fixedDate.getDate() + 1);
-                        
-                        // Use Australian date format (DD/MM/YYYY)
-                        publishedDate = fixedDate.toLocaleDateString('en-AU', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                        });
-                    } else {
-                        // If date parsing fails, use the original string
-                        publishedDate = article.published;
-                    }
-                }
-            } catch (e) {
-                console.error('Error formatting date in card:', e);
-                publishedDate = article.published; // Use the original string as fallback
-            }
-        }
-        
+        const published = article.published || 'Unknown date';
         const author = article.author || 'Unknown author';
         
         let statusBadge = '';
@@ -400,7 +316,7 @@ function renderArticles() {
                 </div>
                 <h3 class="font-semibold mb-2 line-clamp-2">${title}</h3>
                 <div class="text-sm text-gray-500 mb-4">
-                    <div>${publishedDate}</div>
+                    <div>${published}</div>
                     <div>${author}</div>
                 </div>
                 <button class="action-button text-white text-sm ${buttonColorClass} view-article-btn" data-id="${article.id}">
@@ -458,44 +374,8 @@ function openArticleModal(articleId) {
     setTimeout(() => {
         originalContentEl.innerHTML = `<p>${article.body || 'No content available'}</p>`;
         
-        // Format the date properly
-        let formattedDate = 'Unknown date';
-        if (article.published) {
-            try {
-                // Handle the timezone issue to ensure correct date is displayed
-                const dateString = article.published;
-                
-                // If the date is supposed to be April 23rd for all articles
-                if (dateString.includes('2025-04-22') || dateString.includes('04/22/2025')) {
-                    formattedDate = '23/04/2025'; // Directly use the correct date
-                } else {
-                    // For other dates, parse normally but handle timezone issues
-                    const date = new Date(article.published);
-                    if (!isNaN(date.getTime())) {
-                        // Add a day to fix the timezone issue if needed
-                        const fixedDate = new Date(date);
-                        // Uncomment the next line if all dates need to be shifted by one day
-                        // fixedDate.setDate(fixedDate.getDate() + 1);
-                        
-                        // Use Australian date format (DD/MM/YYYY)
-                        formattedDate = fixedDate.toLocaleDateString('en-AU', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                        });
-                    } else {
-                        // If date parsing fails, use the original string
-                        formattedDate = article.published;
-                    }
-                }
-            } catch (e) {
-                console.error('Error formatting date:', e);
-                formattedDate = article.published; // Use the original string as fallback
-            }
-        }
-        
         // Set date and URL
-        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${formattedDate}</span>`;
+        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${article.published || 'Unknown date'}</span>`;
         modalUrlEl.textContent = article.url || 'Source URL';
         modalUrlEl.href = article.url || '#';
         document.getElementById('view-original-btn').href = article.url || '#';
@@ -566,115 +446,71 @@ function triggerGitHubWorkflow() {
         // Now create the function to make the actual GitHub API request
         const triggerGitHubAction = async () => {
             try {
-                // Load the token directly from Firebase if it's not already loaded
-                if (!githubConfig.accessToken) {
-                    console.log('GitHub token not loaded, fetching from Firebase...');
-                    try {
-                        const doc = await db.collection('system').doc('config').get();
-                        console.log('Workflow trigger - doc exists:', doc.exists);
-                        if (doc.exists) {
-                            console.log('Workflow trigger - doc data keys:', Object.keys(doc.data() || {}));
-                            console.log('Workflow trigger - github_token exists:', !!doc.data().github_token);
-                        }
-                        
-                        if (doc.exists && doc.data().github_token) {
-                            githubConfig.accessToken = doc.data().github_token;
-                            console.log('GitHub token loaded successfully from Firebase');
-                        } else {
-                            console.warn('GitHub token not found in Firebase config');
-                            
-                            // Fall back to opening the browser tab
-                            const owner = githubConfig.repoOwner;
-                            const repo = githubConfig.repoName;
-                            const workflowFileName = githubConfig.workflowId;
-                            
-                            const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}/workflow_dispatch`;
-                            console.log(`Opening workflow in browser: ${workflowUrl}`);
-                            window.open(workflowUrl, '_blank');
-                            
-                            showToast('Please complete the workflow trigger in the new browser tab', 'info');
-                            await db.collection('runs').doc(runId).update({
-                                status: 'redirected_to_github',
-                                workflow_url: workflowUrl
-                            });
-                            return;
-                        }
-                    } catch (error) {
-                        console.error('Error loading GitHub token from Firebase:', error);
-                        throw new Error('Failed to load GitHub token from Firebase');
-                    }
-                }
-                
-                // Check if we have a token now
-                if (!githubConfig.accessToken) {
-                    throw new Error('No GitHub token available');
-                }
-                
-                console.log('GitHub token available:', githubConfig.accessToken ? 'Yes (length: ' + githubConfig.accessToken.length + ')' : 'No');
-                
-                // Direct API call to GitHub
+                // Get owner, repo and workflow info
                 const owner = githubConfig.repoOwner;
                 const repo = githubConfig.repoName;
-                const workflow_filename = githubConfig.workflowId;
+                const workflowFileName = githubConfig.workflowId;
+                const branch = githubConfig.branch || 'main';
                 
-                // GitHub API endpoint for workflow dispatch
-                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow_filename}/dispatches`;
+                // For logging/display purposes
+                const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}`;
                 
-                console.log(`Triggering workflow via API: ${apiUrl}`);
+                // First retrieve the GitHub token from Firebase
+                const configDoc = await db.collection('system').doc('config').get();
+                if (!configDoc.exists || !configDoc.data().github_token) {
+                    throw new Error('GitHub token not found. Please set up your token first.');
+                }
                 
-                // Make the API request
-                const response = await fetch(apiUrl, {
+                const token = configDoc.data().github_token;
+                
+                // Update status to attempting API trigger
+                await db.collection('runs').doc(runId).update({
+                    status: 'api_trigger_attempt',
+                    workflow_url: workflowUrl
+                });
+                
+                // Trigger the workflow via GitHub API
+                const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/vnd.github.v3+json',
-                        'Authorization': `token ${githubConfig.accessToken}`,
+                        'Authorization': `token ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        ref: 'main' // The branch where the workflow file is located
+                        ref: branch
                     })
                 });
                 
-                console.log('API Response status:', response.status);
-                
                 if (response.status === 204) {
-                    // 204 No Content is the success response for this endpoint
-                    console.log('Workflow triggered successfully!');
-                    showToast('Content pipeline workflow triggered successfully!', 'success');
-                    
-                    // Update Firebase run status
+                    // 204 No Content is the success response
+                    showToast('Pipeline triggered successfully! Check GitHub Actions for progress.', 'success');
                     await db.collection('runs').doc(runId).update({
-                        status: 'triggered',
+                        status: 'triggered_via_api',
                         triggered_at: new Date().toISOString()
                     });
                 } else {
-                    // Handle error response
-                    let errorText = '';
-                    try {
-                        const errorData = await response.json();
-                        errorText = JSON.stringify(errorData);
-                    } catch (e) {
-                        errorText = await response.text() || 'No error details available';
-                    }
-                    
-                    console.error('GitHub API error:', response.status, errorText);
-                    throw new Error(`GitHub API responded with status ${response.status}: ${errorText}`);
+                    // If not 204, get error details
+                    const errorText = await response.text();
+                    throw new Error(`API request failed with status ${response.status}: ${errorText}`);
                 }
             } catch (error) {
                 console.error('Error triggering GitHub workflow:', error);
                 showToast('Error triggering workflow: ' + error.message, 'error');
                 
-                // If the API call failed, offer to open GitHub manually
-                if (confirm('Failed to trigger workflow via API. Would you like to open GitHub to trigger it manually?')) {
-                    const owner = githubConfig.repoOwner;
-                    const repo = githubConfig.repoName;
-                    const workflowFileName = githubConfig.workflowId;
-                    window.open(`https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}/workflow_dispatch`, '_blank');
-                }
+                // If API fails, fall back to redirect method
+                const owner = githubConfig.repoOwner;
+                const repo = githubConfig.repoName;
+                const workflowFileName = githubConfig.workflowId;
+                const workflowUrl = `https://github.com/${owner}/${repo}/actions/workflows/${workflowFileName}/workflow_dispatch`;
+                
+                window.open(workflowUrl, '_blank');
+                showToast('Redirecting to GitHub for manual trigger instead', 'info');
                 
                 await db.collection('runs').doc(runId).update({
-                    status: 'error',
-                    error: error.message
+                    status: 'error_falling_back_to_redirect',
+                    error: error.message,
+                    workflow_url: workflowUrl
                 });
             } finally {
                 // Reset button state in any case

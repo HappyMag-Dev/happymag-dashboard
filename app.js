@@ -32,7 +32,6 @@ const refreshBtnEl = document.getElementById('refresh-btn');
 const runWorkflowBtnEl = document.getElementById('run-workflow-btn');
 const articleModalEl = document.getElementById('article-modal');
 const modalTitleEl = document.getElementById('modal-title');
-const originalContentEl = document.getElementById('original-content');
 const rewrittenContentEl = document.getElementById('rewritten-content');
 const modalUrlEl = document.getElementById('modal-url');
 const wordpressLinkEl = document.getElementById('wordpress-link');
@@ -309,8 +308,7 @@ function renderArticles() {
         
         html += `
             <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm article-card opacity-0 card-with-depth" 
-                 style="animation: fadeIn 0.5s ease-out forwards, slideUp 0.5s ease-out forwards; animation-delay: ${animationDelay}s;" 
-                 data-id="${article.id}">
+                 style="animation: fadeIn 0.5s ease-out forwards, slideUp 0.5s ease-out forwards; animation-delay: ${animationDelay}s;">
                 <div class="flex justify-between items-start mb-2">
                     ${statusBadge}
                 </div>
@@ -327,13 +325,67 @@ function renderArticles() {
     });
     
     articlesContainerEl.innerHTML = html;
+}
+
+// Function to copy the rewritten article content
+function copyArticleContent() {
+    const rewrittenText = document.getElementById('rewritten-text');
+    if (!rewrittenText) return;
     
-    // Add event listeners to view article buttons
-    document.querySelectorAll('.view-article-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const articleId = btn.getAttribute('data-id');
-            openArticleModal(articleId);
+    // Get the HTML content
+    const htmlContent = rewrittenText.innerHTML;
+    
+    // Create a temporary div to work with the content
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Process the HTML to get paragraphs
+    const paragraphs = [];
+    tempDiv.querySelectorAll('p').forEach(p => {
+        let text = p.textContent.trim();
+        if (text) {
+            // Split paragraph by sentences (basic sentence detection)
+            const sentences = text.replace(/([.!?])\s+/g, "$1\n").split("\n");
+            // Filter out empty sentences
+            const filteredSentences = sentences.filter(s => s.trim().length > 0);
+            paragraphs.push(filteredSentences.join("\n"));
+        }
+    });
+    
+    // Join paragraphs with 1.5 spacing (two newlines)
+    const formattedText = paragraphs.join("\n\n");
+    
+    // Try to use clipboard API first
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(formattedText).then(() => {
+            showCopyFeedback(true);
+        }).catch(err => {
+            console.error('Error copying text with Clipboard API: ', err);
+            // Fall back to execCommand
+            copyTextFallback(formattedText);
         });
+    } else {
+        // Use fallback for browsers without Clipboard API
+        copyTextFallback(formattedText);
+    }
+}
+
+// Convert date to Australian time
+function formatAustralianDate(dateString) {
+    if (!dateString) return 'Unknown date';
+    
+    const date = new Date(dateString);
+    
+    // Create a formatter for Australian time (AEST/AEDT)
+    // Australia/Sydney timezone is UTC+10 or UTC+11 during daylight saving
+    return date.toLocaleString('en-AU', {
+        timeZone: 'Australia/Sydney',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
     });
 }
 
@@ -344,17 +396,6 @@ function openArticleModal(articleId) {
     
     // Set modal title
     modalTitleEl.textContent = article.title || 'Untitled Article';
-    
-    // Set original content with loading state
-    originalContentEl.innerHTML = `
-        <div class="flex items-center justify-center p-4">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Loading content...</span>
-        </div>
-    `;
     
     // Set rewritten content with loading state
     rewrittenContentEl.innerHTML = `
@@ -370,19 +411,34 @@ function openArticleModal(articleId) {
     // Show modal first for better UX
     articleModalEl.classList.remove('hidden');
     
-    // Set original content with a small delay
+    // Set content with a small delay
     setTimeout(() => {
-        originalContentEl.innerHTML = `<p>${article.body || 'No content available'}</p>`;
-        
-        // Set date and URL
-        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${article.published || 'Unknown date'}</span>`;
-        modalUrlEl.textContent = article.url || 'Source URL';
+        // Set date and URL (convert to Australian time)
+        const australianDate = formatAustralianDate(article.published);
+        document.getElementById('modal-date').innerHTML = `Published: <span class="font-medium">${australianDate}</span>`;
+        modalUrlEl.textContent = 'Source';
         modalUrlEl.href = article.url || '#';
-        document.getElementById('view-original-btn').href = article.url || '#';
         
         // Set rewritten content with copy button
         if (article.rewritten_html) {
-            rewrittenContentEl.innerHTML = `<div id="rewritten-text" class="animate-in">${article.rewritten_html}</div>`;
+            // Parse and format the HTML with proper spacing
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = article.rewritten_html;
+            
+            let formattedHtml = '';
+            
+            // Process each paragraph
+            tempDiv.querySelectorAll('p').forEach(p => {
+                // Get text content
+                let text = p.textContent;
+                if (!text.trim()) return;
+                
+                // Format sentences with line breaks
+                const formattedText = text.replace(/([.!?])\s+/g, "$1<br>");
+                formattedHtml += `<p style="margin-bottom: 1.5em;">${formattedText}</p>`;
+            });
+            
+            rewrittenContentEl.innerHTML = `<div id="rewritten-text" class="animate-in" style="line-height: 1.6;">${formattedHtml}</div>`;
             
             // Add copy button
             const copyButtonDiv = document.createElement('div');
@@ -531,31 +587,6 @@ function triggerGitHubWorkflow() {
     });
 }
 
-// Function to copy the rewritten article content
-function copyArticleContent() {
-    const rewrittenText = document.getElementById('rewritten-text');
-    if (!rewrittenText) return;
-    
-    // Get the text content (strip HTML)
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = rewrittenText.innerHTML;
-    const textToCopy = tempDiv.textContent || tempDiv.innerText || '';
-    
-    // Try to use clipboard API first
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            showCopyFeedback(true);
-        }).catch(err => {
-            console.error('Error copying text with Clipboard API: ', err);
-            // Fall back to execCommand
-            copyTextFallback(textToCopy);
-        });
-    } else {
-        // Use fallback for browsers without Clipboard API
-        copyTextFallback(textToCopy);
-    }
-}
-
 // Fallback copy method using execCommand
 function copyTextFallback(text) {
     try {
@@ -632,10 +663,19 @@ function setupEventListeners() {
     // Close modal button
     closeModalEl.addEventListener('click', closeArticleModal);
     
-    // Add event listener for the copy button in modal
+    // Add event listener for the copy button in modal using event delegation
     document.addEventListener('click', function(e) {
+        // Handle copy button in modal
         if (e.target && e.target.id === 'copy-rewritten-btn') {
             copyArticleContent();
+        }
+        
+        // Handle View & Copy buttons on article cards
+        if (e.target && e.target.classList.contains('view-article-btn')) {
+            const articleId = e.target.getAttribute('data-id');
+            if (articleId) {
+                openArticleModal(articleId);
+            }
         }
     });
     

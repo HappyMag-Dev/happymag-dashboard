@@ -225,8 +225,8 @@
             </div>
         </section>
 
-        <!-- Recent Activity -->
-        <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
+        Recent Activity
+        <!-- <section class="mb-8 animate-slide-up" style="animation-delay: 0.3s">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-medium text-gray-800">Recent Activity</h2>
                 <div class="flex space-x-2">
@@ -254,7 +254,7 @@
                     </tbody>
                 </table>
             </div>
-        </section>
+        </section> -->
     </div>
 
     <!-- Article Modal -->
@@ -265,48 +265,29 @@
                 <button id="close-modal" class="text-2xl hover:text-gray-700 transition-colors">&times;</button>
             </div>
             <div class="p-5">
-                <!-- Content grid layout with original on left (narrower) and rewritten on right (wider) -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- SpotlightCard for Original Article - takes 1/3 of the space -->
-                    <div class="md:col-span-1 relative spotlight-card">
-                        <!-- White gradient background -->
-                        <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
-                        
-                        <div class="relative p-4 rounded-xl border border-gray-100 shadow-sm">
-                            <div class="mb-3">
-                                <h3 class="text-base font-medium text-gray-800 mb-2">Original Article</h3>
-                                <p id="modal-date" class="text-xs text-gray-500 mb-1">Published: <span class="font-medium">Loading date...</span></p>
-                                <p class="text-xs">Source: <a href="#" target="_blank" id="modal-url" class="text-primary-600 hover:underline">Loading...</a></p>
-                            </div>
-                            
-                            <!-- Removed the original-content div with unnecessary text -->
-                            <!-- Removed the View Original button -->
-                        </div>
-                    </div>
-                    
-                    <!-- SpotlightCard for Rewritten Article - takes 2/3 of the space -->
-                    <div class="md:col-span-2 relative spotlight-card">
+                <!-- Content layout -->
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- SpotlightCard for Rewritten Article -->
+                    <div class="relative spotlight-card">
                         <!-- White gradient background -->
                         <div class="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-xl"></div>
                         
                         <div class="relative p-6 rounded-xl border border-gray-100 shadow-sm">
                             <div class="mb-4">
-                                <h3 class="text-lg font-medium text-gray-800 mb-2">Rewritten Article</h3>
-                                <div class="flex items-center">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-2">Rewritten Article</h3>
+                                    <p id="modal-date" class="text-xs text-gray-500">Published: <span class="font-medium">Loading date...</span></p>
+                                </div>
+                                <div class="flex items-center mt-2">
                                     <a href="#" target="_blank" id="wordpress-link" class="text-primary-600 hover:underline hidden mr-4">
                                         View on Website
                                     </a>
+                                    <a href="#" target="_blank" id="modal-url" class="text-primary-600 hover:underline text-sm">Source</a>
                                 </div>
                             </div>
                             
                             <div id="rewritten-content" class="bg-white p-5 rounded-lg border border-gray-100 max-h-[500px] overflow-y-auto mb-4">
                                 Loading rewritten content...
-                            </div>
-                            
-                            <div class="flex justify-end space-x-3">
-                                <button id="copy-article-btn" class="action-button bg-blue-600 text-white hover:bg-blue-700">
-                                    Copy Article
-                                </button>
                             </div>
                         </div>
                     </div>

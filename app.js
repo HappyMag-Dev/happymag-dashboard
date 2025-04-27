@@ -37,6 +37,8 @@ const modalUrlEl = document.getElementById('modal-url');
 const wordpressLinkEl = document.getElementById('wordpress-link');
 const closeModalEl = document.getElementById('close-modal');
 const currentDateEl = document.getElementById('current-date');
+const workflowToggleEl = document.getElementById('workflow-toggle');
+const workflowStatusLabelEl = document.getElementById('workflow-status-label');
 
 // GitHub repositories and workflow configuration
 const githubConfig = {
@@ -50,6 +52,10 @@ const githubConfig = {
 // Global state
 let currentFilter = 'all';
 let articles = [];
+let workflowState = {
+    paused: false,
+    lastUpdated: null
+};
 
 // Load GitHub API token securely from Firebase
 function loadGitHubToken() {
@@ -84,14 +90,135 @@ function loadGitHubToken() {
         });
 }
 
+// Load workflow state from Firebase
+function loadWorkflowState() {
+    return db.collection('system').doc('workflow').get()
+        .then(doc => {
+            console.log('Workflow state retrieval attempt complete');
+            if (doc.exists) {
+                const data = doc.data();
+                workflowState = {
+                    paused: data.paused === true,
+                    lastUpdated: data.paused ? data.paused_at : (data.resumed_at || null),
+                    pausedBy: data.paused_by || null,
+                    resumedBy: data.resumed_by || null
+                };
+                
+                // Update UI
+                updateWorkflowToggleUI();
+                
+                console.log('Workflow state loaded:', workflowState);
+                return workflowState;
+            } else {
+                console.log('No workflow state document found. Assuming workflow is active.');
+                workflowState = {
+                    paused: false,
+                    lastUpdated: null
+                };
+                
+                // Create the workflow document if it doesn't exist
+                return db.collection('system').doc('workflow').set({
+                    paused: false,
+                    created_at: new Date().toISOString(),
+                }).then(() => {
+                    console.log('Created workflow state document');
+                    return workflowState;
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading workflow state:', error);
+            return {
+                paused: false,
+                lastUpdated: null,
+                error: error.message
+            };
+        });
+}
+
+// Update workflow toggle UI based on current state
+function updateWorkflowToggleUI() {
+    if (!workflowToggleEl || !workflowStatusLabelEl) return;
+    
+    // Update toggle state
+    workflowToggleEl.checked = !workflowState.paused;
+    
+    // Update label
+    if (workflowState.paused) {
+        workflowStatusLabelEl.textContent = 'Workflow Paused';
+        workflowStatusLabelEl.classList.remove('text-green-600');
+        workflowStatusLabelEl.classList.add('text-red-600');
+    } else {
+        workflowStatusLabelEl.textContent = 'Workflow Running';
+        workflowStatusLabelEl.classList.remove('text-red-600');
+        workflowStatusLabelEl.classList.add('text-green-600');
+    }
+    
+    // Update timestamp if available
+    if (workflowState.lastUpdated) {
+        const timestamp = new Date(workflowState.lastUpdated);
+        const formattedDate = timestamp.toLocaleString();
+        const element = document.createElement('span');
+        element.className = 'text-xs block text-gray-500 mt-1';
+        element.textContent = workflowState.paused ? 
+            `Paused on: ${formattedDate}` : 
+            `Resumed on: ${formattedDate}`;
+        
+        // Replace existing timestamp if present
+        const existingTimestamp = workflowStatusLabelEl.parentNode.querySelector('.text-xs.block');
+        if (existingTimestamp) {
+            existingTimestamp.remove();
+        }
+        
+        workflowStatusLabelEl.parentNode.appendChild(element);
+    }
+}
+
+// Toggle workflow state in Firebase
+function toggleWorkflowState(paused) {
+    const newState = {
+        paused: paused,
+        [paused ? 'paused_at' : 'resumed_at']: new Date().toISOString(),
+        [paused ? 'paused_by' : 'resumed_by']: sessionStorage.getItem('email') || 'unknown'
+    };
+    
+    return db.collection('system').doc('workflow').set(newState, { merge: true })
+        .then(() => {
+            console.log(`Workflow ${paused ? 'paused' : 'resumed'} successfully`);
+            
+            // Update local state
+            workflowState.paused = paused;
+            workflowState.lastUpdated = newState[paused ? 'paused_at' : 'resumed_at'];
+            
+            // Update UI
+            updateWorkflowToggleUI();
+            
+            // Show toast notification
+            showToast(`Workflow ${paused ? 'paused' : 'resumed'} successfully`, 'success');
+            
+            return true;
+        })
+        .catch(error => {
+            console.error(`Error ${paused ? 'pausing' : 'resuming'} workflow:`, error);
+            
+            // Show error toast
+            showToast(`Error ${paused ? 'pausing' : 'resuming'} workflow: ${error.message}`, 'error');
+            
+            // Reset toggle to match actual state
+            updateWorkflowToggleUI();
+            
+            return false;
+        });
+}
+
 // Initialize the dashboard
 function initDashboard() {
     // Set current date
     const now = new Date();
     currentDateEl.textContent = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     
-    // Load GitHub token and then continue
-    loadGitHubToken().then(tokenLoaded => {
+    // Load GitHub token and workflow state in parallel, then continue
+    Promise.all([loadGitHubToken(), loadWorkflowState()]).then(([tokenLoaded, _]) => {
         if (tokenLoaded) {
             console.log('GitHub token loaded, direct workflow triggers will be available');
             if (runWorkflowBtnEl) {
@@ -789,6 +916,7 @@ function setupEventListeners() {
         
         // Update data
         updateLastUpdated();
+        loadWorkflowState();
         loadStats();
         loadActivity();
         loadArticles();
@@ -807,6 +935,14 @@ function setupEventListeners() {
     // Run Workflow Button
     if (runWorkflowBtnEl) {
         runWorkflowBtnEl.addEventListener('click', triggerGitHubWorkflow);
+    }
+    
+    // Workflow Toggle Switch
+    if (workflowToggleEl) {
+        workflowToggleEl.addEventListener('change', () => {
+            const paused = !workflowToggleEl.checked;
+            toggleWorkflowState(paused);
+        });
     }
     
     // Filter status
